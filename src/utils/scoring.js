@@ -38,7 +38,9 @@ export function processGame(game) {
       rawScore: p.rawScore,
       rank: p.rank,
       chombo: p.chombo,
-      points: normalPoints + adjustment
+      // All point components are multiples of 0.1; round to 1 decimal to
+      // avoid float artifacts like 5.299999999999997 from surfacing in the UI.
+      points: Math.round((normalPoints + adjustment) * 10) / 10
     };
   });
 }

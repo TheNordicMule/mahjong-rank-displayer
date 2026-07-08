@@ -11,9 +11,14 @@ export default function History() {
   const navigate = useNavigate();
 
   const mapped = useMemo(() => {
-    return games.map(g => {
+    return games.map((g, index) => {
       const processed = processGame(g);
-      return { id: g.id, date: formatDate(g.timestamp), players: processed };
+      return {
+        id: g.id,
+        gameNumber: index + 1,
+        date: formatDate(g.timestamp),
+        players: processed
+      };
     });
   }, [games]);
 
@@ -62,7 +67,10 @@ export default function History() {
         {mapped.map(g => (
           <div className="game-item card" key={g.id}>
             <div className="game-header">
-              <div className="game-date">{g.date}</div>
+              <div className="game-date">
+                <span className="game-number">#{g.gameNumber}</span>
+                {g.date}
+              </div>
               <button
                 className="btn btn-danger delete-btn"
                 onClick={() => handleDelete(g.id)}

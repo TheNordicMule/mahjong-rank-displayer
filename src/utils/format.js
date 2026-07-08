@@ -9,7 +9,10 @@ export function formatDate(ts) {
 }
 
 export function formatSigned(n) {
-  if (n > 0) return `+${n}`;
-  if (n < 0) return `${n}`;
+  // Round to 1 decimal for display robustness — points are always multiples
+  // of 0.1, and cumulative sums can otherwise drift (e.g. 0.1 + 0.2).
+  const r = Math.round(n * 10) / 10;
+  if (r > 0) return `+${r}`;
+  if (r < 0) return `${r}`;
   return '0';
 }

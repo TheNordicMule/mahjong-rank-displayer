@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getGames, getGamesRange } from '../utils/storage';
 import { processGame } from '../utils/scoring';
 import { getLeaderboard } from '../utils/stats';
-import { formatSigned } from '../utils/format';
+import { formatDate, formatSigned } from '../utils/format';
 import StatCard from '../components/StatCard';
 import './Range.css';
 
@@ -11,18 +11,21 @@ export default function Range() {
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [totalGames, setTotalGames] = useState(0);
+  const [allGames, setAllGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [results, setResults] = useState(null);
   const [rangeCount, setRangeCount] = useState(0);
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState('');
+  const [referenceOpen, setReferenceOpen] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
         const games = await getGames();
         setTotalGames(games.length);
+        setAllGames(games);
         if (games.length > 0) {
           setEnd(String(games.length));
         }
@@ -34,20 +37,20 @@ export default function Range() {
     })();
   }, []);
 
-  const handleCalculate = async () => {
-    const s = parseInt(start, 10);
-    const e = parseInt(end, 10);
+  const referenceRows = useMemo(() => {
+    return allGames.map((g, index) => {
+      const processed = processGame(g);
+      const winner = processed.find(p => p.rank === 1);
+      return {
+        number: index + 1,
+        date: formatDate(g.timestamp),
+        winner: winner?.name || '—',
+        id: g.id
+      };
+    });
+  }, [allGames]);
 
-    if (isNaN(s) || isNaN(e)) {
-      setError('Please enter valid numbers for both fields.');
-      return;
-    }
-
-    if (s > e) {
-      setError('Start game must be less than or equal to end game.');
-      return;
-    }
-
+  const runCalculation = async (s, e) => {
     setError('');
     setWarnings('');
     setFetching(true);
@@ -108,6 +111,40 @@ export default function Range() {
     }
   };
 
+  const handleCalculate = () => {
+    const s = parseInt(start, 10);
+    const e = parseInt(end, 10);
+
+    if (isNaN(s) || isNaN(e)) {
+      setError('Please enter valid numbers for both fields.');
+      return;
+    }
+
+    if (s > e) {
+      setError('Start game must be less than or equal to end game.');
+      return;
+    }
+
+    runCalculation(s, e);
+  };
+
+  const applyPreset = (count) => {
+    if (totalGames === 0) return;
+    const endNum = totalGames;
+    const startNum = count === 'all' ? 1 : Math.max(1, totalGames - count + 1);
+    setStart(String(startNum));
+    setEnd(String(endNum));
+    runCalculation(startNum, endNum);
+  };
+
+  const handleReferenceSet = (number, bound) => {
+    if (bound === 'start') {
+      setStart(String(number));
+    } else {
+      setEnd(String(number));
+    }
+  };
+
   if (loading) {
     return (
       <div className="range page-mount">
@@ -153,6 +190,28 @@ export default function Range() {
             />
           </div>
         </div>
+
+        <div className="range-presets">
+          <span className="range-presets-label">Quick select</span>
+          <div className="range-preset-buttons">
+            {[
+              { key: 'all', label: 'All games' },
+              { key: 5, label: 'Last 5' },
+              { key: 10, label: 'Last 10' },
+              { key: 20, label: 'Last 20' }
+            ].map(preset => (
+              <button
+                key={preset.key}
+                className="btn btn-secondary btn-preset"
+                onClick={() => applyPreset(preset.key)}
+                disabled={totalGames === 0}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="range-bounds-hint">
           {totalGames > 0
             ? `Total games: ${totalGames} (valid range: 1 – ${totalGames})`
@@ -166,6 +225,49 @@ export default function Range() {
           {fetching ? 'Calculating…' : 'Calculate'}
         </button>
       </div>
+
+      {totalGames > 0 && (
+        <div className="range-reference card">
+          <button
+            className="range-reference-toggle"
+            onClick={() => setReferenceOpen(o => !o)}
+            aria-expanded={referenceOpen}
+          >
+            <span>Game reference</span>
+            <span className="range-reference-chevron">{referenceOpen ? '▾' : '▸'}</span>
+          </button>
+          {referenceOpen && (
+            <div className="range-reference-list">
+              {referenceRows.map(row => (
+                <div key={row.id} className="range-reference-row">
+                  <div className="range-reference-info">
+                    <span className="range-reference-number">#{row.number}</span>
+                    <span className="range-reference-date">{row.date}</span>
+                    <span className="range-reference-winner">
+                      <span className="range-reference-winner-label">Winner</span>
+                      {row.winner}
+                    </span>
+                  </div>
+                  <div className="range-reference-actions">
+                    <button
+                      className="btn btn-reference"
+                      onClick={() => handleReferenceSet(row.number, 'start')}
+                    >
+                      From
+                    </button>
+                    <button
+                      className="btn btn-reference"
+                      onClick={() => handleReferenceSet(row.number, 'end')}
+                    >
+                      To
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="error-box">{error}</div>
