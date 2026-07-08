@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import * as storage from '../utils/storage';
 import { RETURN_SCORE } from '../utils/scoring';
 import './Record.css';
@@ -12,19 +12,46 @@ const EMPTY_PLAYERS = [
 ];
 
 export default function Record() {
+  const { id } = useParams();
+  const isEdit = Boolean(id);
   const [players, setPlayers] = useState(EMPTY_PLAYERS.map(p => ({ ...p })));
   const [suggestions, setSuggestions] = useState([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadingGame, setLoadingGame] = useState(false);
+  const [gameNotFound, setGameNotFound] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     storage.getPlayers().then(setSuggestions).catch(() => {});
   }, []);
 
-  // Refill most recent names on mount
+  // In edit mode, fetch existing game and prefill form
   useEffect(() => {
+    if (!isEdit) return;
+    setLoadingGame(true);
+    storage.getGames().then(games => {
+      const game = games.find(g => g.id === id);
+      if (game) {
+        setPlayers(game.players.map(p => ({
+          name: p.name,
+          score: String(p.rawScore),
+          chombo: p.chombo,
+        })));
+      } else {
+        setGameNotFound(true);
+      }
+      setLoadingGame(false);
+    }).catch(() => {
+      setError('Failed to load game.');
+      setLoadingGame(false);
+    });
+  }, [id, isEdit]);
+
+  // Refill most recent names on mount (skip in edit mode)
+  useEffect(() => {
+    if (isEdit) return;
     storage.getLatestNames().then(names => {
       if (names && names.length > 0) {
         setPlayers(prev => prev.map((p, i) => ({
@@ -77,7 +104,11 @@ export default function Record() {
 
     setSaving(true);
     try {
-      await storage.addGame(data);
+      if (isEdit) {
+        await storage.updateGame(id, data);
+      } else {
+        await storage.addGame(data);
+      }
       setSaved(true);
       setTimeout(() => {
         navigate('/history');
@@ -92,11 +123,31 @@ export default function Record() {
     navigate(-1);
   };
 
+  if (loadingGame) {
+    return (
+      <div className="record page-mount">
+        <p>Loading…</p>
+      </div>
+    );
+  }
+
+  if (gameNotFound) {
+    return (
+      <div className="record page-mount">
+        <h1 className="page-title">Edit Game</h1>
+        <div className="error-box">Game not found.</div>
+        <div className="action-row">
+          <button className="btn btn-secondary" onClick={handleCancel}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
   if (saved) {
     return (
       <div className="record page-mount">
         <div className="success-state">
-          <p>Game saved successfully!</p>
+          <p>{isEdit ? 'Game updated successfully!' : 'Game saved successfully!'}</p>
           <span className="success-hint">Redirecting to history…</span>
         </div>
       </div>
@@ -105,7 +156,7 @@ export default function Record() {
 
   return (
     <div className="record page-mount">
-      <h1 className="page-title">Record New Game</h1>
+      <h1 className="page-title">{isEdit ? 'Edit Game' : 'Record New Game'}</h1>
 
       <div className="uma-info card">
         <span className="uma-label">Uma</span>
@@ -157,7 +208,7 @@ export default function Record() {
       <div className="action-row">
         <button className="btn btn-secondary" onClick={handleCancel} disabled={saving}>Cancel</button>
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+          {isEdit ? (saving ? 'Saving…' : 'Save Changes') : (saving ? 'Saving…' : 'Save')}
         </button>
       </div>
     </div>

@@ -71,14 +71,24 @@ export default function History() {
                 <span className="game-number">#{g.gameNumber}</span>
                 {g.date}
               </div>
-              <button
-                className="btn btn-danger delete-btn"
-                onClick={() => handleDelete(g.id)}
-                disabled={deleting === g.id}
-                aria-label="Delete game"
-              >
-                {deleting === g.id ? 'Deleting…' : 'Delete'}
-              </button>
+              <div className="game-actions">
+                <button
+                  className="btn edit-btn"
+                  onClick={() => navigate(`/record/${g.id}`)}
+                  disabled={deleting === g.id}
+                  aria-label="Edit game"
+                >
+                  Edit
+                </button>
+                <button
+                  className="btn btn-danger delete-btn"
+                  onClick={() => handleDelete(g.id)}
+                  disabled={deleting === g.id}
+                  aria-label="Delete game"
+                >
+                  {deleting === g.id ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
             </div>
             <div className="game-players">
               {g.players.map(p => (

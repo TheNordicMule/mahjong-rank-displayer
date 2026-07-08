@@ -13,6 +13,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="record" element={<Record />} />
+          <Route path="record/:id" element={<Record />} />
           <Route path="history" element={<History />} />
           <Route path="range" element={<Range />} />
           <Route path="player/:name" element={<PlayerDetail />} />

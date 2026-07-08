@@ -29,6 +29,12 @@ export function useGames() {
     return saved;
   }, []);
 
+  const editGame = useCallback(async (id, players) => {
+    const updated = await storage.updateGame(id, players);
+    setGames(prev => prev.map(g => (g.id === id ? updated : g)));
+    return updated;
+  }, []);
+
   const deleteGame = useCallback(async (id) => {
     await storage.deleteGame(id);
     setGames(prev => prev.filter(g => g.id !== id));
@@ -39,5 +45,5 @@ export function useGames() {
     setGames([]);
   }, []);
 
-  return { games, loading, error, addGame, deleteGame, refresh, clearAll };
+  return { games, loading, error, addGame, editGame, deleteGame, refresh, clearAll };
 }

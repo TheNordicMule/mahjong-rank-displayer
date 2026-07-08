@@ -29,6 +29,14 @@ export async function addGame(players) {
   return data.game;
 }
 
+export async function updateGame(id, players) {
+  const data = await request(`/api/games/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ players }),
+  });
+  return data.game;
+}
+
 export async function deleteGame(id) {
   await request(`/api/games/${id}`, { method: 'DELETE' });
 }

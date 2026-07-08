@@ -169,6 +169,31 @@
   font-variant-numeric: tabular-nums;
 }
 
+.game-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edit-btn {
+  background-color: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  font-size: 12px;
+  padding: 5px 12px;
+  opacity: 0.7;
+}
+
+.edit-btn:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.game-item:hover .edit-btn {
+  opacity: 1;
+}
+
 .delete-btn {
   font-size: 12px;
   padding: 5px 12px;
