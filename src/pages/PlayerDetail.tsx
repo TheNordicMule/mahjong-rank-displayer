@@ -39,7 +39,7 @@ export default function PlayerDetail() {
     setPointsTrend(trend);
 
     const history: GameHistoryEntry[] = [];
-    for (const game of games) {
+    for (const game of [...games].sort((a, b) => b.timestamp - a.timestamp)) {
       const processed = processGame(game);
       const entry = processed.find((p) => p.name === name);
       if (entry) {
