@@ -16,7 +16,6 @@
   grid-template-columns: 44px 1fr 40px 70px 60px 130px;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid transparent;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -85,6 +84,16 @@
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+/* Two-line "Avg Rank" header — stack the words so each line is narrow
+   enough to right-align cleanly with the 2.xx data values below. */
+.range-table-header .rt-avg {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  line-height: 1.2;
 }
 
 .rt-placements {

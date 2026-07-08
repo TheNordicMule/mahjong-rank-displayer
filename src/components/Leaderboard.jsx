@@ -33,7 +33,10 @@ export default function Leaderboard({ games }) {
           <span className="rt-col rt-name">Player</span>
           <span className="rt-col rt-games">GP</span>
           <span className="rt-col rt-total">Total</span>
-          <span className="rt-col rt-avg">Avg Rank</span>
+          <span className="rt-col rt-avg rt-avg-head">
+            <span>Avg</span>
+            <span>Rank</span>
+          </span>
           <span className="rt-col rt-placements">1st/2nd/3rd/4th</span>
         </div>
         {entries.map((p, i) => (
