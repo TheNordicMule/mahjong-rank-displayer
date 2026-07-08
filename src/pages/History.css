@@ -110,6 +110,23 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: color 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chombo-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--danger);
+  background-color: var(--danger-soft);
+  border: 1px solid rgba(232, 93, 93, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  line-height: 1.4;
+  flex-shrink: 0;
 }
 
 .player-link:hover {

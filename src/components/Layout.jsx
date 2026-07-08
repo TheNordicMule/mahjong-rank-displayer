@@ -16,6 +16,9 @@ export default function Layout() {
           <NavLink to="/history" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             History
           </NavLink>
+          <NavLink to="/range" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            Range
+          </NavLink>
         </div>
       </nav>
       <main className="content">

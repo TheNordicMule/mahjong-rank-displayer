@@ -1,61 +1,48 @@
-import { RETURN_SCORE } from './scoring';
+const BASE = '';
 
-const STORAGE_KEY = 'mahjong_games';
-
-function getStored() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function setStored(games) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
-  } catch {
-    // storage full or unavailable — silently ignore
-  }
-}
-
-export function getGames() {
-  return getStored();
-}
-
-export function addGame(players) {
-  const id = Date.now() + '_' + Math.random().toString(36).substring(2, 8);
-  const game = {
-    id,
-    timestamp: Date.now(),
-    players: players.map(p => ({ name: p.name, rawScore: Number(p.rawScore) })),
-    uma: [30, 10, -10, -30],
-    returnScore: RETURN_SCORE
-  };
-  const games = getStored();
-  games.unshift(game);
-  setStored(games);
-  return game;
-}
-
-export function deleteGame(id) {
-  const games = getStored().filter(g => g.id !== id);
-  setStored(games);
-}
-
-export function getPlayers() {
-  const games = getStored();
-  const nameSet = new Set();
-  games.forEach(g => {
-    g.players.forEach(p => {
-      if (p.name && p.name.trim()) {
-        nameSet.add(p.name.trim());
-      }
-    });
+async function request(path, options = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
   });
-  return Array.from(nameSet).sort();
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
 }
 
-export function clearAll() {
-  setStored([]);
+export async function getGames() {
+  const data = await request('/api/games');
+  return data.games;
+}
+
+export async function getGamesRange(start, end) {
+  const data = await request(`/api/games?start=${start}&end=${end}`);
+  return data.games;
+}
+
+export async function addGame(players) {
+  const data = await request('/api/games', {
+    method: 'POST',
+    body: JSON.stringify({ players }),
+  });
+  return data.game;
+}
+
+export async function deleteGame(id) {
+  await request(`/api/games/${id}`, { method: 'DELETE' });
+}
+
+export async function clearAll() {
+  await request('/api/games', { method: 'DELETE' });
+}
+
+export async function getPlayers() {
+  const data = await request('/api/players');
+  return data.players;
+}
+
+export async function getLatestNames() {
+  const data = await request('/api/games/latest-names');
+  return data.names;
 }

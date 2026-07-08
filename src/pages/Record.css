@@ -140,6 +140,36 @@
   margin: 0;
 }
 
+.chombo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.chombo-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--danger);
+  cursor: pointer;
+}
+
+.chombo-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.chombo-toggle input[type="checkbox"]:checked + .chombo-label {
+  color: var(--danger);
+}
+
 @media (max-width: 520px) {
   .uma-info {
     gap: 6px 10px;

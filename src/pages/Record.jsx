@@ -1,26 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers } from '../utils/storage';
-import { addGame } from '../utils/storage';
+import * as storage from '../utils/storage';
 import { RETURN_SCORE } from '../utils/scoring';
 import './Record.css';
 
 const EMPTY_PLAYERS = [
-  { name: '', score: '' },
-  { name: '', score: '' },
-  { name: '', score: '' },
-  { name: '', score: '' }
+  { name: '', score: '', chombo: false },
+  { name: '', score: '', chombo: false },
+  { name: '', score: '', chombo: false },
+  { name: '', score: '', chombo: false }
 ];
 
 export default function Record() {
   const [players, setPlayers] = useState(EMPTY_PLAYERS.map(p => ({ ...p })));
   const [suggestions, setSuggestions] = useState([]);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setSuggestions(getPlayers());
+    storage.getPlayers().then(setSuggestions).catch(() => {});
+  }, []);
+
+  // Refill most recent names on mount
+  useEffect(() => {
+    storage.getLatestNames().then(names => {
+      if (names && names.length > 0) {
+        setPlayers(prev => prev.map((p, i) => ({
+          ...p,
+          name: names[i] ?? p.name
+        })));
+      }
+    }).catch(() => {});
   }, []);
 
   const updatePlayer = (index, field, value) => {
@@ -31,7 +43,7 @@ export default function Record() {
     setError('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate
     for (let i = 0; i < players.length; i++) {
       if (!players[i].name.trim()) {
@@ -59,14 +71,21 @@ export default function Record() {
 
     const data = players.map(p => ({
       name: p.name.trim(),
-      rawScore: Number(p.score)
+      rawScore: Number(p.score),
+      chombo: p.chombo
     }));
 
-    addGame(data);
-    setSaved(true);
-    setTimeout(() => {
-      navigate('/history');
-    }, 800);
+    setSaving(true);
+    try {
+      await storage.addGame(data);
+      setSaved(true);
+      setTimeout(() => {
+        navigate('/history');
+      }, 800);
+    } catch (e) {
+      setError(`Failed to save game: ${e.message}`);
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -122,14 +141,24 @@ export default function Record() {
                 value={p.score}
                 onChange={e => updatePlayer(i, 'score', e.target.value)}
               />
+              <label className="chombo-toggle">
+                <input
+                  type="checkbox"
+                  checked={p.chombo}
+                  onChange={e => updatePlayer(i, 'chombo', e.target.checked)}
+                />
+                <span className="chombo-label">Chombo</span>
+              </label>
             </div>
           </div>
         ))}
       </div>
 
       <div className="action-row">
-        <button className="btn btn-secondary" onClick={handleCancel}>Cancel</button>
-        <button className="btn btn-primary" onClick={handleSave}>Save</button>
+        <button className="btn btn-secondary" onClick={handleCancel} disabled={saving}>Cancel</button>
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, getGames } from '../utils/storage';
+import { useGames } from '../hooks/useGames';
 import { getPlayerStats, getPointsTrend } from '../utils/stats';
 import StatCard from '../components/StatCard';
 import PlacementBars from '../components/PlacementBars';
@@ -9,39 +9,61 @@ import PointsTrend from '../components/PointsTrend';
 import './Dashboard.css';
 
 export default function Dashboard() {
-  const [players, setPlayers] = useState([]);
+  const { games, loading, error } = useGames();
   const [selected, setSelected] = useState('');
   const [stats, setStats] = useState(null);
   const [pointsTrend, setPointsTrend] = useState([]);
   const navigate = useNavigate();
 
-  const load = () => {
-    const p = getPlayers();
-    setPlayers(p);
-    if (!selected && p.length > 0) {
-      setSelected(p[0]);
-    }
-  };
+  const players = useMemo(() => {
+    const nameSet = new Set();
+    games.forEach(g => {
+      g.players.forEach(p => {
+        if (p.name && p.name.trim()) {
+          nameSet.add(p.name.trim());
+        }
+      });
+    });
+    return Array.from(nameSet).sort();
+  }, [games]);
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!selected && players.length > 0) {
+      setSelected(players[0]);
+    }
+  }, [players, selected]);
 
   useEffect(() => {
     if (selected) {
-      const games = getGames();
       setStats(getPlayerStats(games, selected));
       setPointsTrend(getPointsTrend(games, selected));
     } else {
       setStats(null);
       setPointsTrend([]);
     }
-  }, [selected]);
+  }, [selected, games]);
 
   const handleSelect = (name) => {
     setSelected(name);
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard page-mount">
+        <h1 className="page-title">Mahjong Tracker</h1>
+        <p className="loading-text">Loading…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard page-mount">
+        <h1 className="page-title">Mahjong Tracker</h1>
+        <div className="error-box">Error loading data: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard page-mount">

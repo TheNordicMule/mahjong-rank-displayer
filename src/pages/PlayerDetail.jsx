@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGames } from '../utils/storage';
+import { useGames } from '../hooks/useGames';
 import { getPlayerStats, getLastRanks, getPointsTrend } from '../utils/stats';
 import { processGame } from '../utils/scoring';
 import { formatDate, formatSigned } from '../utils/format';
@@ -12,39 +12,63 @@ import './PlayerDetail.css';
 
 export default function PlayerDetail() {
   const { name } = useParams();
+  const { games, loading, error } = useGames();
   const [stats, setStats] = useState(null);
   const [lastRanks, setLastRanks] = useState([]);
   const [pointsTrend, setPointsTrend] = useState([]);
   const [gameHistory, setGameHistory] = useState([]);
 
   useEffect(() => {
-    const games = getGames();
-    if (name) {
-      const playerStats = getPlayerStats(games, name);
-      setStats(playerStats);
+    if (!name) return;
+    const playerStats = getPlayerStats(games, name);
+    setStats(playerStats);
 
-      const ranks = getLastRanks(games, name, 20);
-      setLastRanks(ranks);
+    const ranks = getLastRanks(games, name, 20);
+    setLastRanks(ranks);
 
-      const trend = getPointsTrend(games, name);
-      setPointsTrend(trend);
+    const trend = getPointsTrend(games, name);
+    setPointsTrend(trend);
 
-      const history = [];
-      for (const game of games) {
-        const processed = processGame(game);
-        const entry = processed.find(p => p.name === name);
-        if (entry) {
-          history.push({
-            date: formatDate(game.timestamp),
-            rank: entry.rank,
-            points: entry.points,
-            rawScore: entry.rawScore
-          });
-        }
+    const history = [];
+    for (const game of games) {
+      const processed = processGame(game);
+      const entry = processed.find(p => p.name === name);
+      if (entry) {
+        history.push({
+          date: formatDate(game.timestamp),
+          rank: entry.rank,
+          points: entry.points,
+          rawScore: entry.rawScore,
+          chombo: entry.chombo
+        });
       }
-      setGameHistory(history);
     }
-  }, [name]);
+    setGameHistory(history);
+  }, [name, games]);
+
+  if (loading) {
+    return (
+      <div className="player-detail page-mount">
+        <div className="detail-header">
+          <Link to="/" className="back-link">← Back to Dashboard</Link>
+          <h1 className="page-title">{name}</h1>
+        </div>
+        <p className="loading-text">Loading…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="player-detail page-mount">
+        <div className="detail-header">
+          <Link to="/" className="back-link">← Back to Dashboard</Link>
+          <h1 className="page-title">{name}</h1>
+        </div>
+        <div className="error-box">Error loading data: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="player-detail page-mount">
@@ -86,7 +110,10 @@ export default function PlayerDetail() {
               <div className="history-item card" key={i}>
                 <div className="history-date">{g.date}</div>
                 <div className="history-detail">
-                  <span className={`history-rank rank-${g.rank}`}>{g.rank}位</span>
+                  <span className={`history-rank rank-${g.rank}`}>
+                    {g.rank}位
+                    {g.chombo && <span className="chombo-badge">Chombo</span>}
+                  </span>
                   <span className="history-score">
                     <span className="history-label">Score</span>
                     {g.rawScore.toLocaleString()}

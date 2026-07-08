@@ -15,7 +15,8 @@ export function rankPlayers(players) {
     .map((p, i) => ({
       name: p.name,
       rawScore: p.rawScore,
-      rank: i + 1
+      rank: i + 1,
+      chombo: !!p.chombo
     }));
 }
 
@@ -23,10 +24,21 @@ export function processGame(game) {
   const ranked = rankPlayers(game.players);
   const returnScore = game.returnScore ?? RETURN_SCORE;
   const uma = game.uma ?? UMA;
-  return ranked.map(p => ({
-    name: p.name,
-    rawScore: p.rawScore,
-    rank: p.rank,
-    points: (p.rawScore - returnScore) / 1000 + uma[p.rank - 1]
-  }));
+  const chomboCount = (game.players || []).filter(p => p.chombo).length;
+  return ranked.map(p => {
+    const normalPoints = (p.rawScore - returnScore) / 1000 + uma[p.rank - 1];
+    let adjustment = 0;
+    if (chomboCount > 0) {
+      adjustment = p.chombo
+        ? (-30 + 10 * (chomboCount - 1))
+        : (10 * chomboCount);
+    }
+    return {
+      name: p.name,
+      rawScore: p.rawScore,
+      rank: p.rank,
+      chombo: p.chombo,
+      points: normalPoints + adjustment
+    };
+  });
 }

@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Record from './pages/Record';
 import History from './pages/History';
+import Range from './pages/Range';
 import PlayerDetail from './pages/PlayerDetail';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="record" element={<Record />} />
           <Route path="history" element={<History />} />
+          <Route path="range" element={<Range />} />
           <Route path="player/:name" element={<PlayerDetail />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
