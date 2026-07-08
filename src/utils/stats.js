@@ -13,6 +13,27 @@ export function getLastRanks(games, playerName, x) {
   return ranks.reverse();
 }
 
+// Returns cumulative points trend oldest→newest.
+// Each entry: { points (that game), cumulative, timestamp }
+export function getPointsTrend(games, playerName) {
+  const trend = [];
+  let cumulative = 0;
+  const chronological = [...games].reverse();
+  for (const game of chronological) {
+    const processed = processGame(game);
+    const entry = processed.find(p => p.name === playerName);
+    if (entry) {
+      cumulative += entry.points;
+      trend.push({
+        points: entry.points,
+        cumulative,
+        timestamp: game.timestamp
+      });
+    }
+  }
+  return trend;
+}
+
 export function getPlayerStats(games, playerName) {
   const relevant = [];
   for (const game of games) {

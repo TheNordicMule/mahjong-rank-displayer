@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getGames } from '../utils/storage';
-import { getPlayerStats, getLastRanks } from '../utils/stats';
+import { getPlayerStats, getLastRanks, getPointsTrend } from '../utils/stats';
 import { processGame } from '../utils/scoring';
 import { formatDate, formatSigned } from '../utils/format';
 import StatCard from '../components/StatCard';
 import PlacementBars from '../components/PlacementBars';
 import RankTrend from '../components/RankTrend';
+import PointsTrend from '../components/PointsTrend';
 import './PlayerDetail.css';
 
 export default function PlayerDetail() {
   const { name } = useParams();
   const [stats, setStats] = useState(null);
   const [lastRanks, setLastRanks] = useState([]);
+  const [pointsTrend, setPointsTrend] = useState([]);
   const [gameHistory, setGameHistory] = useState([]);
 
   useEffect(() => {
@@ -23,6 +25,9 @@ export default function PlayerDetail() {
 
       const ranks = getLastRanks(games, name, 20);
       setLastRanks(ranks);
+
+      const trend = getPointsTrend(games, name);
+      setPointsTrend(trend);
 
       const history = [];
       for (const game of games) {
@@ -65,6 +70,10 @@ export default function PlayerDetail() {
           <div className="section card">
             <h3 className="section-title">Last {lastRanks.length} Ranks</h3>
             <RankTrend ranks={lastRanks} />
+          </div>
+
+          <div className="section card">
+            <PointsTrend trend={pointsTrend} />
           </div>
         </>
       )}

@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayers, getGames } from '../utils/storage';
-import { getPlayerStats } from '../utils/stats';
+import { getPlayerStats, getPointsTrend } from '../utils/stats';
 import StatCard from '../components/StatCard';
 import PlacementBars from '../components/PlacementBars';
 import RankTrend from '../components/RankTrend';
+import PointsTrend from '../components/PointsTrend';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const [players, setPlayers] = useState([]);
   const [selected, setSelected] = useState('');
   const [stats, setStats] = useState(null);
+  const [pointsTrend, setPointsTrend] = useState([]);
   const navigate = useNavigate();
 
   const load = () => {
@@ -30,8 +32,10 @@ export default function Dashboard() {
     if (selected) {
       const games = getGames();
       setStats(getPlayerStats(games, selected));
+      setPointsTrend(getPointsTrend(games, selected));
     } else {
       setStats(null);
+      setPointsTrend([]);
     }
   }, [selected]);
 
@@ -87,6 +91,10 @@ export default function Dashboard() {
           <div className="section card">
             <h3 className="section-title">Last {stats.lastRanks.length} Ranks</h3>
             <RankTrend ranks={stats.lastRanks} />
+          </div>
+
+          <div className="section card">
+            <PointsTrend trend={pointsTrend} />
           </div>
         </>
       )}
