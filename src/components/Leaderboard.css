@@ -1,0 +1,199 @@
+/* Leaderboard table — reuses the same class names as Range page for consistency */
+
+.leaderboard-card {
+  overflow-x: auto;
+}
+
+.range-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 420px;
+}
+
+.range-table-header {
+  display: grid;
+  grid-template-columns: 44px 1fr 40px 70px 60px 130px;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  align-items: center;
+}
+
+.range-table-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 40px 70px 60px 130px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface);
+  border: 1px solid transparent;
+  align-items: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.range-table-row:hover {
+  background-color: var(--surface-hover);
+  border-color: var(--border);
+}
+
+/* Highlight the #1 row */
+.range-table-row.top-row {
+  border-left: 3px solid var(--gold);
+  background-color: rgba(240, 198, 116, 0.06);
+}
+
+.rt-col {
+  display: flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rt-rank {
+  justify-content: center;
+}
+
+.rt-name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rt-games {
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.rt-total {
+  justify-content: flex-end;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.rt-avg {
+  justify-content: flex-end;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.rt-placements {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+/* Placement count badges */
+.placement-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  background-color: var(--card-bg);
+}
+
+.placement-count.rank-1 {
+  color: var(--gold);
+  background-color: var(--gold-soft);
+}
+
+.placement-count.rank-2 {
+  color: var(--silver);
+  background-color: var(--silver-soft);
+}
+
+.placement-count.rank-3 {
+  color: var(--bronze);
+  background-color: var(--bronze-soft);
+}
+
+.placement-count.rank-4 {
+  color: var(--red-rank);
+  background-color: var(--red-rank-soft);
+}
+
+/* Rank badge (circle) */
+.player-rank-badge {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.player-rank-badge.rank-1 {
+  background: linear-gradient(180deg, #f9d98c 0%, var(--gold) 100%);
+  color: #2a1d00;
+}
+
+.player-rank-badge.rank-2 {
+  background: linear-gradient(180deg, #dfe1e5 0%, var(--silver) 100%);
+  color: #1f2226;
+}
+
+.player-rank-badge.rank-3 {
+  background: linear-gradient(180deg, #e4ac82 0%, var(--bronze) 100%);
+  color: #fff;
+}
+
+.player-rank-badge.rank-4 {
+  background: linear-gradient(180deg, #f08080 0%, var(--red-rank) 100%);
+  color: #fff;
+}
+
+/* Player link */
+.player-link {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.player-link:hover {
+  color: var(--accent);
+}
+
+/* Responsive */
+@media (max-width: 540px) {
+  .range-table-header,
+  .range-table-row {
+    grid-template-columns: 36px 1fr 36px 60px 50px 110px;
+    gap: 6px;
+    padding: 8px 8px;
+  }
+
+  .rt-total {
+    font-size: 13px;
+  }
+
+  .rt-avg {
+    font-size: 12px;
+  }
+
+  .rt-placements {
+    gap: 3px;
+  }
+
+  .placement-count {
+    min-width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+}

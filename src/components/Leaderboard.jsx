@@ -1,0 +1,64 @@
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { getLeaderboard } from '../utils/stats';
+import { formatSigned } from '../utils/format';
+import './Leaderboard.css';
+
+export default function Leaderboard({ games }) {
+  const entries = useMemo(() => {
+    if (!games || games.length === 0) return [];
+    const lb = getLeaderboard(games);
+    return lb.map(p => {
+      const placementCounts = {};
+      for (const r of [1, 2, 3, 4]) {
+        placementCounts[r] = Math.round((p.placement[r] / 100) * p.games);
+      }
+      return { ...p, placementCounts };
+    });
+  }, [games]);
+
+  if (entries.length === 0) {
+    return (
+      <div className="empty-state">
+        <p>No games recorded yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card leaderboard-card">
+      <div className="range-table">
+        <div className="range-table-header">
+          <span className="rt-col rt-rank">#</span>
+          <span className="rt-col rt-name">Player</span>
+          <span className="rt-col rt-games">GP</span>
+          <span className="rt-col rt-total">Total</span>
+          <span className="rt-col rt-avg">Avg Rank</span>
+          <span className="rt-col rt-placements">1st/2nd/3rd/4th</span>
+        </div>
+        {entries.map((p, i) => (
+          <div key={p.name} className={`range-table-row${i === 0 ? ' top-row' : ''}`}>
+            <span className="rt-col rt-rank">
+              <span className={`player-rank-badge rank-${Math.min(i + 1, 4)}`}>{i + 1}</span>
+            </span>
+            <span className="rt-col rt-name">
+              <Link to={`/player/${encodeURIComponent(p.name)}`} className="player-link">
+                {p.name}
+              </Link>
+            </span>
+            <span className="rt-col rt-games">{p.games}</span>
+            <span className="rt-col rt-total">{formatSigned(p.totalPoints)}</span>
+            <span className="rt-col rt-avg">{p.avgRank.toFixed(2)}</span>
+            <span className="rt-col rt-placements">
+              {[1, 2, 3, 4].map(r => (
+                <span key={r} className={`placement-count rank-${r}`}>
+                  {p.placementCounts[r]}
+                </span>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

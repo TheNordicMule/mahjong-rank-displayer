@@ -4,8 +4,10 @@ import { useGames } from '../hooks/useGames';
 import { getPlayerStats, getPointsTrend } from '../utils/stats';
 import StatCard from '../components/StatCard';
 import PlacementBars from '../components/PlacementBars';
+import PlacementPie from '../components/PlacementPie';
 import RankTrend from '../components/RankTrend';
 import PointsTrend from '../components/PointsTrend';
+import Leaderboard from '../components/Leaderboard';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -107,7 +109,10 @@ export default function Dashboard() {
 
           <div className="section card">
             <h3 className="section-title">Placement Distribution</h3>
-            <PlacementBars placement={stats.placement} totalGames={stats.totalGames} />
+            <div className="placement-distribution">
+              <PlacementPie placement={stats.placement} totalGames={stats.totalGames} />
+              <PlacementBars placement={stats.placement} totalGames={stats.totalGames} />
+            </div>
           </div>
 
           <div className="section card">
@@ -119,6 +124,13 @@ export default function Dashboard() {
             <PointsTrend trend={pointsTrend} />
           </div>
         </>
+      )}
+
+      {players.length > 0 && (
+        <div className="section card">
+          <h3 className="section-title">Leaderboard (Total Points)</h3>
+          <Leaderboard games={games} />
+        </div>
       )}
 
       {players.length > 0 && (

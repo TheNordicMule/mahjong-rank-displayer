@@ -82,6 +82,30 @@
   margin-top: 2px;
 }
 
+.placement-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .placement-distribution {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .placement-distribution > :first-child {
+    flex: 0 0 220px;
+  }
+
+  .placement-distribution > :last-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .action-row {
   text-align: center;
   padding: 6px 0 0;
