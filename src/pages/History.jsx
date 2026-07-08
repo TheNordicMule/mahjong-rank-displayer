@@ -88,7 +88,10 @@ export default function History() {
                     {p.name}
                     {p.chombo && <span className="chombo-badge">Chombo</span>}
                   </Link>
-                  <span className="player-points">{formatSigned(p.points)}</span>
+                  <span className="player-scores">
+                    <span className="player-raw-score">{p.rawScore.toLocaleString()}</span>
+                    <span className="player-points">{formatSigned(p.points)}</span>
+                  </span>
                 </div>
               ))}
             </div>

@@ -150,6 +150,19 @@
   color: var(--accent);
 }
 
+.player-scores {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-raw-score {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
 .player-points {
   font-weight: 700;
   color: var(--accent);
