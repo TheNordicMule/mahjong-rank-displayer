@@ -12,15 +12,20 @@ export default function History() {
   const navigate = useNavigate();
 
   const mapped = useMemo(() => {
-    return games.map((g: Game, index: number) => {
-      const processed = processGame(g);
-      return {
-        id: g.id,
-        gameNumber: index + 1,
-        date: formatDate(g.timestamp),
-        players: processed,
-      };
-    });
+    // games arrive from the API ordered by timestamp ASC; compute the
+    // chronological game number from that order, then reverse so the most
+    // recent game is displayed first.
+    return games
+      .map((g: Game, index: number) => {
+        const processed = processGame(g);
+        return {
+          id: g.id,
+          gameNumber: index + 1,
+          date: formatDate(g.timestamp),
+          players: processed,
+        };
+      })
+      .reverse();
   }, [games]);
 
   const handleDelete = async (id: string): Promise<void> => {
