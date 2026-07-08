@@ -8,6 +8,9 @@
  * DELETE /api/games — clear all games
  */
 
+import { asc } from 'drizzle-orm';
+import { getDb, games, gamePlayers } from '../../_db.js';
+
 const DEFAULT_UMA = [30, 10, -10, -30];
 const DEFAULT_RETURN_SCORE = 25000;
 
@@ -19,13 +22,13 @@ function buildGame(gameRow, playerRows) {
     id: gameRow.id,
     timestamp: gameRow.timestamp,
     uma: JSON.parse(gameRow.uma),
-    returnScore: gameRow.return_score,
+    returnScore: gameRow.returnScore,
     players: playerRows
-      .filter((p) => p.game_id === gameRow.id)
+      .filter((p) => p.gameId === gameRow.id)
       .sort((a, b) => a.position - b.position)
       .map((p) => ({
         name: p.name,
-        rawScore: p.raw_score,
+        rawScore: p.rawScore,
         chombo: p.chombo === 1,
       })),
   };
@@ -57,27 +60,28 @@ function validatePlayers(players) {
 export async function onRequestGet(context) {
   try {
     const { env, request } = context;
+    const db = getDb(env);
     const url = new URL(request.url);
     const startParam = url.searchParams.get('start');
     const endParam = url.searchParams.get('end');
 
     const [gamesRows, playerRows] = await Promise.all([
-      env.DB.prepare('SELECT * FROM games ORDER BY timestamp ASC').all(),
-      env.DB.prepare('SELECT * FROM game_players ORDER BY position ASC').all(),
+      db.select().from(games).orderBy(asc(games.timestamp)),
+      db.select().from(gamePlayers).orderBy(asc(gamePlayers.position)),
     ]);
 
-    let games = gamesRows.results.map((g) => buildGame(g, playerRows.results));
+    let gamesList = gamesRows.map((g) => buildGame(g, playerRows));
 
     // Apply start/end filter (1-based inclusive) only when both are present
     if (startParam !== null && endParam !== null) {
       const start = parseInt(startParam, 10);
       const end = parseInt(endParam, 10);
       if (!isNaN(start) && !isNaN(end) && start >= 1 && end >= start) {
-        games = games.slice(start - 1, end);
+        gamesList = gamesList.slice(start - 1, end);
       }
     }
 
-    return new Response(JSON.stringify({ games }), {
+    return new Response(JSON.stringify({ games: gamesList }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
@@ -91,6 +95,7 @@ export async function onRequestGet(context) {
 export async function onRequestPost(context) {
   try {
     const { env, request } = context;
+    const db = getDb(env);
 
     const body = await request.json();
     const players = body && body.players;
@@ -108,25 +113,26 @@ export async function onRequestPost(context) {
     const uma = JSON.stringify(DEFAULT_UMA);
     const returnScore = DEFAULT_RETURN_SCORE;
 
-    const insertGame = env.DB.prepare(
-      'INSERT INTO games (id, timestamp, uma, return_score) VALUES (?, ?, ?, ?)'
-    ).bind(id, timestamp, uma, returnScore);
-
-    const insertPlayers = players.map((p, i) =>
-      env.DB.prepare(
-        'INSERT INTO game_players (game_id, position, name, raw_score, chombo) VALUES (?, ?, ?, ?, ?)'
-      ).bind(id, i, p.name, p.rawScore, p.chombo ? 1 : 0)
-    );
-
     // Batch — first statement is game insert, rest are player inserts
-    await env.DB.batch([insertGame, ...insertPlayers]);
+    await db.batch([
+      db.insert(games).values({ id, timestamp, uma, returnScore }),
+      ...players.map((p, i) =>
+        db.insert(gamePlayers).values({
+          gameId: id,
+          position: i,
+          name: p.name,
+          rawScore: p.rawScore,
+          chombo: p.chombo ? 1 : 0,
+        })
+      ),
+    ]);
 
     const game = {
       id,
       timestamp,
       uma: DEFAULT_UMA,
       returnScore: DEFAULT_RETURN_SCORE,
-      players: players.map((p, i) => ({
+      players: players.map((p) => ({
         name: p.name,
         rawScore: p.rawScore,
         chombo: p.chombo || false,
@@ -148,12 +154,10 @@ export async function onRequestPost(context) {
 export async function onRequestDelete(context) {
   try {
     const { env } = context;
+    const db = getDb(env);
 
     // Delete game_players first, then games (or rely on CASCADE)
-    await env.DB.batch([
-      env.DB.prepare('DELETE FROM game_players'),
-      env.DB.prepare('DELETE FROM games'),
-    ]);
+    await db.batch([db.delete(gamePlayers), db.delete(games)]);
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { 'Content-Type': 'application/json' },

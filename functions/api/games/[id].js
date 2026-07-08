@@ -2,6 +2,9 @@
  * PUT /api/games/:id — update a game's players (preserves timestamp/uma/return_score)
  */
 
+import { eq } from 'drizzle-orm';
+import { getDb, games, gamePlayers } from '../../_db.js';
+
 /**
  * Validate PUT body: must contain exactly 4 players with valid fields.
  * (Duplicated from index.js to avoid refactoring.)
@@ -30,11 +33,14 @@ export async function onRequestPut(context) {
   try {
     const { env, params, request } = context;
     const { id } = params;
+    const db = getDb(env);
 
     // Check the game exists and read its current data
-    const gameRow = await env.DB.prepare('SELECT * FROM games WHERE id = ?')
-      .bind(id)
-      .first();
+    const [gameRow] = await db
+      .select()
+      .from(games)
+      .where(eq(games.id, id))
+      .limit(1);
 
     if (!gameRow) {
       return new Response(JSON.stringify({ error: 'not found' }), {
@@ -54,22 +60,25 @@ export async function onRequestPut(context) {
       });
     }
 
-    // Transaction: delete old players, insert new ones
-    const deleteOld = env.DB.prepare('DELETE FROM game_players WHERE game_id = ?').bind(id);
-
-    const insertPlayers = players.map((p, i) =>
-      env.DB.prepare(
-        'INSERT INTO game_players (game_id, position, name, raw_score, chombo) VALUES (?, ?, ?, ?, ?)'
-      ).bind(id, i, p.name, p.rawScore, p.chombo ? 1 : 0)
-    );
-
-    await env.DB.batch([deleteOld, ...insertPlayers]);
+    // Batch: delete old players, insert new ones
+    await db.batch([
+      db.delete(gamePlayers).where(eq(gamePlayers.gameId, id)),
+      ...players.map((p, i) =>
+        db.insert(gamePlayers).values({
+          gameId: id,
+          position: i,
+          name: p.name,
+          rawScore: p.rawScore,
+          chombo: p.chombo ? 1 : 0,
+        })
+      ),
+    ]);
 
     const game = {
       id,
       timestamp: gameRow.timestamp,
       uma: JSON.parse(gameRow.uma),
-      returnScore: gameRow.return_score,
+      returnScore: gameRow.returnScore,
       players: players.map((p) => ({
         name: p.name,
         rawScore: p.rawScore,
@@ -97,11 +106,14 @@ export async function onRequestDelete(context) {
   try {
     const { env, params } = context;
     const { id } = params;
+    const db = getDb(env);
 
     // Check the game exists first
-    const existing = await env.DB.prepare('SELECT id FROM games WHERE id = ?')
-      .bind(id)
-      .first();
+    const [existing] = await db
+      .select({ id: games.id })
+      .from(games)
+      .where(eq(games.id, id))
+      .limit(1);
 
     if (!existing) {
       return new Response(JSON.stringify({ error: 'not found' }), {
@@ -111,7 +123,7 @@ export async function onRequestDelete(context) {
     }
 
     // CASCADE will remove game_players automatically
-    await env.DB.prepare('DELETE FROM games WHERE id = ?').bind(id).run();
+    await db.delete(games).where(eq(games.id, id));
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { 'Content-Type': 'application/json' },

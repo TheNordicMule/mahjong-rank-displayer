@@ -2,14 +2,20 @@
  * GET /api/games/latest-names — return the 4 player names from the most recent game
  */
 
+import { eq, asc, desc } from 'drizzle-orm';
+import { getDb, games, gamePlayers } from '../../_db.js';
+
 export async function onRequestGet(context) {
   try {
     const { env } = context;
+    const db = getDb(env);
 
     // Get the most recent game's id (highest timestamp)
-    const latest = await env.DB.prepare(
-      'SELECT id FROM games ORDER BY timestamp DESC LIMIT 1'
-    ).first();
+    const [latest] = await db
+      .select({ id: games.id })
+      .from(games)
+      .orderBy(desc(games.timestamp))
+      .limit(1);
 
     if (!latest) {
       return new Response(JSON.stringify({ names: [] }), {
@@ -17,13 +23,13 @@ export async function onRequestGet(context) {
       });
     }
 
-    const playerRows = await env.DB.prepare(
-      'SELECT name FROM game_players WHERE game_id = ? ORDER BY position ASC'
-    )
-      .bind(latest.id)
-      .all();
+    const rows = await db
+      .select({ name: gamePlayers.name })
+      .from(gamePlayers)
+      .where(eq(gamePlayers.gameId, latest.id))
+      .orderBy(asc(gamePlayers.position));
 
-    const names = playerRows.results.map((r) => r.name);
+    const names = rows.map((r) => r.name);
 
     return new Response(JSON.stringify({ names }), {
       headers: { 'Content-Type': 'application/json' },
