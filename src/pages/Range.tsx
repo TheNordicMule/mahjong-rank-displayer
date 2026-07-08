@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import type { Game, LeaderboardEntry, Placement } from '../types';
 import { getGames, getGamesRange } from '../utils/storage';
 import { processGame } from '../utils/scoring';
 import { getLeaderboard } from '../utils/stats';
@@ -7,18 +8,23 @@ import { formatDate, formatSigned } from '../utils/format';
 import StatCard from '../components/StatCard';
 import './Range.css';
 
+interface RangeResult extends LeaderboardEntry {
+  avgPoints: number;
+  placementCount: Placement;
+}
+
 export default function Range() {
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [totalGames, setTotalGames] = useState(0);
-  const [allGames, setAllGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [fetching, setFetching] = useState(false);
-  const [results, setResults] = useState(null);
-  const [rangeCount, setRangeCount] = useState(0);
-  const [error, setError] = useState('');
-  const [warnings, setWarnings] = useState('');
-  const [referenceOpen, setReferenceOpen] = useState(true);
+  const [start, setStart] = useState<string>('');
+  const [end, setEnd] = useState<string>('');
+  const [totalGames, setTotalGames] = useState<number>(0);
+  const [allGames, setAllGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [fetching, setFetching] = useState<boolean>(false);
+  const [results, setResults] = useState<RangeResult[] | null>(null);
+  const [rangeCount, setRangeCount] = useState<number>(0);
+  const [error, setError] = useState<string>('');
+  const [warnings, setWarnings] = useState<string>('');
+  const [referenceOpen, setReferenceOpen] = useState<boolean>(true);
 
   useEffect(() => {
     (async () => {
@@ -40,17 +46,17 @@ export default function Range() {
   const referenceRows = useMemo(() => {
     return allGames.map((g, index) => {
       const processed = processGame(g);
-      const winner = processed.find(p => p.rank === 1);
+      const winner = processed.find((p) => p.rank === 1);
       return {
         number: index + 1,
         date: formatDate(g.timestamp),
         winner: winner?.name || '—',
-        id: g.id
+        id: g.id,
       };
     });
   }, [allGames]);
 
-  const runCalculation = async (s, e) => {
+  const runCalculation = async (s: number, e: number): Promise<void> => {
     setError('');
     setWarnings('');
     setFetching(true);
@@ -76,10 +82,10 @@ export default function Range() {
         const leaderboard = getLeaderboard(games);
 
         // Compute raw placement counts (getLeaderboard only gives %)
-        const rawCounts = {};
-        games.forEach(game => {
+        const rawCounts: Record<string, Placement> = {};
+        games.forEach((game) => {
           const processed = processGame(game);
-          processed.forEach(p => {
+          processed.forEach((p) => {
             if (!rawCounts[p.name]) {
               rawCounts[p.name] = { 1: 0, 2: 0, 3: 0, 4: 0 };
             }
@@ -87,31 +93,29 @@ export default function Range() {
           });
         });
 
-        const enriched = leaderboard.map(p => ({
+        const enriched: RangeResult[] = leaderboard.map((p) => ({
           ...p,
-          avgPoints: p.games > 0
-            ? Math.round((p.totalPoints / p.games) * 100) / 100
-            : 0,
-          placementCount: rawCounts[p.name] || { 1: 0, 2: 0, 3: 0, 4: 0 }
+          avgPoints: p.games > 0 ? Math.round((p.totalPoints / p.games) * 100) / 100 : 0,
+          placementCount: rawCounts[p.name] || { 1: 0, 2: 0, 3: 0, 4: 0 },
         }));
 
         setResults(enriched);
       }
 
       if (s !== clampedStart || e !== clampedEnd) {
-        const msgs = [];
+        const msgs: string[] = [];
         if (s !== clampedStart) msgs.push(`Start clamped to ${clampedStart}`);
         if (e !== clampedEnd) msgs.push(`End clamped to ${clampedEnd}`);
         setWarnings(`Range adjusted: ${msgs.join(', ')}.`);
       }
-    } catch (e) {
-      setError(`Error fetching games: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`Error fetching games: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setFetching(false);
     }
   };
 
-  const handleCalculate = () => {
+  const handleCalculate = (): void => {
     const s = parseInt(start, 10);
     const e = parseInt(end, 10);
 
@@ -128,7 +132,7 @@ export default function Range() {
     runCalculation(s, e);
   };
 
-  const applyPreset = (count) => {
+  const applyPreset = (count: number | 'all'): void => {
     if (totalGames === 0) return;
     const endNum = totalGames;
     const startNum = count === 'all' ? 1 : Math.max(1, totalGames - count + 1);
@@ -137,7 +141,7 @@ export default function Range() {
     runCalculation(startNum, endNum);
   };
 
-  const handleReferenceSet = (number, bound) => {
+  const handleReferenceSet = (number: number, bound: 'start' | 'end'): void => {
     if (bound === 'start') {
       setStart(String(number));
     } else {
@@ -156,6 +160,13 @@ export default function Range() {
 
   const hasResults = results !== null;
 
+  const presets: { key: number | 'all'; label: string }[] = [
+    { key: 'all', label: 'All games' },
+    { key: 5, label: 'Last 5' },
+    { key: 10, label: 'Last 10' },
+    { key: 20, label: 'Last 20' },
+  ];
+
   return (
     <div className="range page-mount">
       <h1 className="page-title">Range Aggregation</h1>
@@ -163,7 +174,9 @@ export default function Range() {
       <div className="range-inputs card">
         <div className="range-fields">
           <div className="range-field">
-            <label className="range-label" htmlFor="start-game">From game #</label>
+            <label className="range-label" htmlFor="start-game">
+              From game #
+            </label>
             <input
               id="start-game"
               className="input"
@@ -171,13 +184,15 @@ export default function Range() {
               min="1"
               max={totalGames || 1}
               value={start}
-              onChange={e => setStart(e.target.value)}
+              onChange={(e) => setStart(e.target.value)}
               placeholder="1"
             />
           </div>
           <div className="range-sep">→</div>
           <div className="range-field">
-            <label className="range-label" htmlFor="end-game">To game #</label>
+            <label className="range-label" htmlFor="end-game">
+              To game #
+            </label>
             <input
               id="end-game"
               className="input"
@@ -185,7 +200,7 @@ export default function Range() {
               min="1"
               max={totalGames || 1}
               value={end}
-              onChange={e => setEnd(e.target.value)}
+              onChange={(e) => setEnd(e.target.value)}
               placeholder={totalGames > 0 ? String(totalGames) : '?'}
             />
           </div>
@@ -194,14 +209,9 @@ export default function Range() {
         <div className="range-presets">
           <span className="range-presets-label">Quick select</span>
           <div className="range-preset-buttons">
-            {[
-              { key: 'all', label: 'All games' },
-              { key: 5, label: 'Last 5' },
-              { key: 10, label: 'Last 10' },
-              { key: 20, label: 'Last 20' }
-            ].map(preset => (
+            {presets.map((preset) => (
               <button
-                key={preset.key}
+                key={String(preset.key)}
                 className="btn btn-secondary btn-preset"
                 onClick={() => applyPreset(preset.key)}
                 disabled={totalGames === 0}
@@ -230,7 +240,7 @@ export default function Range() {
         <div className="range-reference card">
           <button
             className="range-reference-toggle"
-            onClick={() => setReferenceOpen(o => !o)}
+            onClick={() => setReferenceOpen((o) => !o)}
             aria-expanded={referenceOpen}
           >
             <span>Game reference</span>
@@ -238,7 +248,7 @@ export default function Range() {
           </button>
           {referenceOpen && (
             <div className="range-reference-list">
-              {referenceRows.map(row => (
+              {referenceRows.map((row) => (
                 <div key={row.id} className="range-reference-row">
                   <div className="range-reference-info">
                     <span className="range-reference-number">#{row.number}</span>
@@ -269,13 +279,9 @@ export default function Range() {
         </div>
       )}
 
-      {error && (
-        <div className="error-box">{error}</div>
-      )}
+      {error && <div className="error-box">{error}</div>}
 
-      {warnings && !error && (
-        <div className="warning-box">{warnings}</div>
-      )}
+      {warnings && !error && <div className="warning-box">{warnings}</div>}
 
       {hasResults && results.length === 0 && (
         <div className="empty-state">
@@ -314,10 +320,11 @@ export default function Range() {
                   <span className="rt-col rt-games">{p.games}</span>
                   <span className="rt-col rt-total">{formatSigned(p.totalPoints)}</span>
                   <span className="rt-col rt-avg">
-                    {p.avgPoints > 0 ? '+' : ''}{p.avgPoints.toFixed(1)}
+                    {p.avgPoints > 0 ? '+' : ''}
+                    {p.avgPoints.toFixed(1)}
                   </span>
                   <span className="rt-col rt-placements">
-                    {[1, 2, 3, 4].map(r => (
+                    {[1, 2, 3, 4].map((r) => (
                       <span key={r} className={`placement-count rank-${r}`}>
                         {p.placementCount[r]}
                       </span>

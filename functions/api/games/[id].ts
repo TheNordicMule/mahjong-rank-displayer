@@ -3,17 +3,19 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { getDb, games, gamePlayers } from '../../_db.js';
+import { getDb, games, gamePlayers } from '../../_db';
+import type { Env } from '../../types';
+import type { Player } from '../../../src/types';
 
 /**
  * Validate PUT body: must contain exactly 4 players with valid fields.
  * (Duplicated from index.js to avoid refactoring.)
  */
-function validatePlayers(players) {
+function validatePlayers(players: unknown): string | null {
   if (!Array.isArray(players) || players.length !== 4) {
     return 'Exactly 4 players are required.';
   }
-  const names = new Set();
+  const names = new Set<string>();
   for (const p of players) {
     if (typeof p.name !== 'string' || p.name.trim() === '') {
       return 'All players must have a non-empty name string.';
@@ -29,18 +31,14 @@ function validatePlayers(players) {
   return null;
 }
 
-export async function onRequestPut(context) {
+export async function onRequestPut(context: EventContext<Env, 'id', unknown>): Promise<Response> {
   try {
     const { env, params, request } = context;
-    const { id } = params;
+    const id = params.id as string;
     const db = getDb(env);
 
     // Check the game exists and read its current data
-    const [gameRow] = await db
-      .select()
-      .from(games)
-      .where(eq(games.id, id))
-      .limit(1);
+    const [gameRow] = await db.select().from(games).where(eq(games.id, id)).limit(1);
 
     if (!gameRow) {
       return new Response(JSON.stringify({ error: 'not found' }), {
@@ -49,7 +47,7 @@ export async function onRequestPut(context) {
       });
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as { players?: unknown };
     const players = body && body.players;
 
     const validationError = validatePlayers(players);
@@ -60,26 +58,28 @@ export async function onRequestPut(context) {
       });
     }
 
+    const validPlayers = players as Player[];
+
     // Batch: delete old players, insert new ones
     await db.batch([
       db.delete(gamePlayers).where(eq(gamePlayers.gameId, id)),
-      ...players.map((p, i) =>
+      ...validPlayers.map((p, i) =>
         db.insert(gamePlayers).values({
           gameId: id,
           position: i,
           name: p.name,
           rawScore: p.rawScore,
           chombo: p.chombo ? 1 : 0,
-        })
+        }),
       ),
     ]);
 
     const game = {
       id,
       timestamp: gameRow.timestamp,
-      uma: JSON.parse(gameRow.uma),
+      uma: JSON.parse(gameRow.uma) as number[],
       returnScore: gameRow.returnScore,
-      players: players.map((p) => ({
+      players: validPlayers.map((p) => ({
         name: p.name,
         rawScore: p.rawScore,
         chombo: p.chombo ? true : false,
@@ -91,7 +91,7 @@ export async function onRequestPut(context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -102,10 +102,12 @@ export async function onRequestPut(context) {
  * DELETE /api/games/:id — delete a single game by id
  */
 
-export async function onRequestDelete(context) {
+export async function onRequestDelete(
+  context: EventContext<Env, 'id', unknown>,
+): Promise<Response> {
   try {
     const { env, params } = context;
-    const { id } = params;
+    const id = params.id as string;
     const db = getDb(env);
 
     // Check the game exists first
@@ -129,7 +131,7 @@ export async function onRequestDelete(context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

@@ -1,6 +1,12 @@
 import './StatCard.css';
 
-export default function StatCard({ label, value, sub }) {
+interface StatCardProps {
+  label: string;
+  value: string;
+  sub?: string;
+}
+
+export default function StatCard({ label, value, sub }: StatCardProps) {
   return (
     <div className="stat-card">
       <span className="stat-label">{label}</span>

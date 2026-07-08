@@ -150,7 +150,7 @@
   user-select: none;
 }
 
-.chombo-toggle input[type="checkbox"] {
+.chombo-toggle input[type='checkbox'] {
   width: 16px;
   height: 16px;
   accent-color: var(--danger);
@@ -166,7 +166,7 @@
   transition: color 0.15s ease;
 }
 
-.chombo-toggle input[type="checkbox"]:checked + .chombo-label {
+.chombo-toggle input[type='checkbox']:checked + .chombo-label {
   color: var(--danger);
 }
 

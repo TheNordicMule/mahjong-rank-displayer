@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { Game, ProcessedPlayer } from '../types';
 import { useGames } from '../hooks/useGames';
 import { processGame } from '../utils/scoring';
 import { formatDate, formatSigned } from '../utils/format';
@@ -7,22 +8,22 @@ import './History.css';
 
 export default function History() {
   const { games, loading, error, deleteGame } = useGames();
-  const [deleting, setDeleting] = useState(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const mapped = useMemo(() => {
-    return games.map((g, index) => {
+    return games.map((g: Game, index: number) => {
       const processed = processGame(g);
       return {
         id: g.id,
         gameNumber: index + 1,
         date: formatDate(g.timestamp),
-        players: processed
+        players: processed,
       };
     });
   }, [games]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!window.confirm('Delete this game record?')) return;
     setDeleting(id);
     try {
@@ -56,7 +57,11 @@ export default function History() {
 
       {mapped.length === 0 && (
         <div className="empty-state">
-          <p>No games recorded yet.<br />Record your first match to see it here.</p>
+          <p>
+            No games recorded yet.
+            <br />
+            Record your first match to see it here.
+          </p>
           <button className="btn btn-primary" onClick={() => navigate('/record')}>
             Record Game
           </button>
@@ -64,7 +69,7 @@ export default function History() {
       )}
 
       <div className="game-list">
-        {mapped.map(g => (
+        {mapped.map((g) => (
           <div className="game-item card" key={g.id}>
             <div className="game-header">
               <div className="game-date">
@@ -91,7 +96,7 @@ export default function History() {
               </div>
             </div>
             <div className="game-players">
-              {g.players.map(p => (
+              {g.players.map((p: ProcessedPlayer) => (
                 <div key={p.name} className={`game-player-row rank-${p.rank}`}>
                   <span className={`player-rank-badge rank-${p.rank}`}>{p.rank}</span>
                   <Link to={`/player/${encodeURIComponent(p.name)}`} className="player-link">

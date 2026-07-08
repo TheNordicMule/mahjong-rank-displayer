@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import type { PlayerStats, TrendPoint, ProcessedPlayer } from '../types';
 import { useGames } from '../hooks/useGames';
 import { getPlayerStats, getLastRanks, getPointsTrend } from '../utils/stats';
 import { processGame } from '../utils/scoring';
@@ -10,13 +11,21 @@ import RankTrend from '../components/RankTrend';
 import PointsTrend from '../components/PointsTrend';
 import './PlayerDetail.css';
 
+interface GameHistoryEntry {
+  date: string;
+  rank: number;
+  points: number;
+  rawScore: number;
+  chombo: boolean;
+}
+
 export default function PlayerDetail() {
   const { name } = useParams();
   const { games, loading, error } = useGames();
-  const [stats, setStats] = useState(null);
-  const [lastRanks, setLastRanks] = useState([]);
-  const [pointsTrend, setPointsTrend] = useState([]);
-  const [gameHistory, setGameHistory] = useState([]);
+  const [stats, setStats] = useState<PlayerStats | null>(null);
+  const [lastRanks, setLastRanks] = useState<number[]>([]);
+  const [pointsTrend, setPointsTrend] = useState<TrendPoint[]>([]);
+  const [gameHistory, setGameHistory] = useState<GameHistoryEntry[]>([]);
 
   useEffect(() => {
     if (!name) return;
@@ -29,17 +38,17 @@ export default function PlayerDetail() {
     const trend = getPointsTrend(games, name);
     setPointsTrend(trend);
 
-    const history = [];
+    const history: GameHistoryEntry[] = [];
     for (const game of games) {
       const processed = processGame(game);
-      const entry = processed.find(p => p.name === name);
+      const entry = processed.find((p) => p.name === name);
       if (entry) {
         history.push({
           date: formatDate(game.timestamp),
           rank: entry.rank,
           points: entry.points,
           rawScore: entry.rawScore,
-          chombo: entry.chombo
+          chombo: entry.chombo,
         });
       }
     }
@@ -50,7 +59,9 @@ export default function PlayerDetail() {
     return (
       <div className="player-detail page-mount">
         <div className="detail-header">
-          <Link to="/" className="back-link">← Back to Dashboard</Link>
+          <Link to="/" className="back-link">
+            ← Back to Dashboard
+          </Link>
           <h1 className="page-title">{name}</h1>
         </div>
         <p className="loading-text">Loading…</p>
@@ -62,7 +73,9 @@ export default function PlayerDetail() {
     return (
       <div className="player-detail page-mount">
         <div className="detail-header">
-          <Link to="/" className="back-link">← Back to Dashboard</Link>
+          <Link to="/" className="back-link">
+            ← Back to Dashboard
+          </Link>
           <h1 className="page-title">{name}</h1>
         </div>
         <div className="error-box">Error loading data: {error}</div>
@@ -73,7 +86,9 @@ export default function PlayerDetail() {
   return (
     <div className="player-detail page-mount">
       <div className="detail-header">
-        <Link to="/" className="back-link">← Back to Dashboard</Link>
+        <Link to="/" className="back-link">
+          ← Back to Dashboard
+        </Link>
         <h1 className="page-title">{name}</h1>
       </div>
 
@@ -111,8 +126,7 @@ export default function PlayerDetail() {
                 <div className="history-date">{g.date}</div>
                 <div className="history-detail">
                   <span className={`history-rank rank-${g.rank}`}>
-                    {g.rank}位
-                    {g.chombo && <span className="chombo-badge">Chombo</span>}
+                    {g.rank}位{g.chombo && <span className="chombo-badge">Chombo</span>}
                   </span>
                   <span className="history-score">
                     <span className="history-label">Score</span>

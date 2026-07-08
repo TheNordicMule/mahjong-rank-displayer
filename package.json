@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "db:create": "wrangler d1 create mahjong-rank-displayer-db",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
@@ -15,7 +16,9 @@
     "db:migrate": "wrangler d1 migrations apply mahjong-rank-displayer-db --remote",
     "db:migrate:local": "wrangler d1 migrations apply mahjong-rank-displayer-db --local",
     "dev:all": "wrangler pages dev -- vite",
-    "deploy": "npm run build && wrangler pages deploy dist"
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -24,8 +27,13 @@
     "react-router-dom": "^6.26.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.3.1",
     "drizzle-kit": "^0.31.10",
+    "prettier": "^3.3.3",
+    "typescript": "^7.0.2",
     "vite": "^5.4.0"
   }
 }

@@ -1,11 +1,4 @@
-import {
-  sqliteTable,
-  text,
-  integer,
-  primaryKey,
-  foreignKey,
-  index,
-} from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey, foreignKey, index } from 'drizzle-orm/sqlite-core';
 
 export const games = sqliteTable(
   'games',
@@ -17,7 +10,7 @@ export const games = sqliteTable(
   },
   (table) => ({
     timestampIdx: index('idx_games_timestamp').on(table.timestamp),
-  })
+  }),
 );
 
 export const gamePlayers = sqliteTable(
@@ -36,5 +29,5 @@ export const gamePlayers = sqliteTable(
       foreignColumns: [games.id],
     }).onDelete('cascade'),
     nameIdx: index('idx_game_players_name').on(table.name),
-  })
+  }),
 );

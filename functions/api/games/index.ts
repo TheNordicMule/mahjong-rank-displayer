@@ -9,19 +9,24 @@
  */
 
 import { asc } from 'drizzle-orm';
-import { getDb, games, gamePlayers } from '../../_db.js';
+import { getDb, games, gamePlayers } from '../../_db';
+import type { Env } from '../../types';
+import type { Game, Player } from '../../../src/types';
 
 const DEFAULT_UMA = [30, 10, -10, -30];
 const DEFAULT_RETURN_SCORE = 25000;
 
+type GameRow = typeof games.$inferSelect;
+type GamePlayerRow = typeof gamePlayers.$inferSelect;
+
 /**
  * Build a Game object from a games row and its associated player rows.
  */
-function buildGame(gameRow, playerRows) {
+function buildGame(gameRow: GameRow, playerRows: GamePlayerRow[]): Game {
   return {
     id: gameRow.id,
     timestamp: gameRow.timestamp,
-    uma: JSON.parse(gameRow.uma),
+    uma: JSON.parse(gameRow.uma) as number[],
     returnScore: gameRow.returnScore,
     players: playerRows
       .filter((p) => p.gameId === gameRow.id)
@@ -37,11 +42,11 @@ function buildGame(gameRow, playerRows) {
 /**
  * Validate POST body: must contain exactly 4 players with valid fields.
  */
-function validatePlayers(players) {
+function validatePlayers(players: unknown): string | null {
   if (!Array.isArray(players) || players.length !== 4) {
     return 'Exactly 4 players are required.';
   }
-  const names = new Set();
+  const names = new Set<string>();
   for (const p of players) {
     if (typeof p.name !== 'string' || p.name.trim() === '') {
       return 'All players must have a non-empty name string.';
@@ -57,7 +62,7 @@ function validatePlayers(players) {
   return null;
 }
 
-export async function onRequestGet(context) {
+export async function onRequestGet(context: EventContext<Env, string, unknown>): Promise<Response> {
   try {
     const { env, request } = context;
     const db = getDb(env);
@@ -85,19 +90,21 @@ export async function onRequestGet(context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
-export async function onRequestPost(context) {
+export async function onRequestPost(
+  context: EventContext<Env, string, unknown>,
+): Promise<Response> {
   try {
     const { env, request } = context;
     const db = getDb(env);
 
-    const body = await request.json();
+    const body = (await request.json()) as { players?: unknown };
     const players = body && body.players;
 
     const validationError = validatePlayers(players);
@@ -108,6 +115,8 @@ export async function onRequestPost(context) {
       });
     }
 
+    const validPlayers = players as Player[];
+
     const id = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const timestamp = Date.now();
     const uma = JSON.stringify(DEFAULT_UMA);
@@ -116,14 +125,14 @@ export async function onRequestPost(context) {
     // Batch — first statement is game insert, rest are player inserts
     await db.batch([
       db.insert(games).values({ id, timestamp, uma, returnScore }),
-      ...players.map((p, i) =>
+      ...validPlayers.map((p, i) =>
         db.insert(gamePlayers).values({
           gameId: id,
           position: i,
           name: p.name,
           rawScore: p.rawScore,
           chombo: p.chombo ? 1 : 0,
-        })
+        }),
       ),
     ]);
 
@@ -132,7 +141,7 @@ export async function onRequestPost(context) {
       timestamp,
       uma: DEFAULT_UMA,
       returnScore: DEFAULT_RETURN_SCORE,
-      players: players.map((p) => ({
+      players: validPlayers.map((p) => ({
         name: p.name,
         rawScore: p.rawScore,
         chombo: p.chombo || false,
@@ -144,14 +153,16 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
-export async function onRequestDelete(context) {
+export async function onRequestDelete(
+  context: EventContext<Env, string, unknown>,
+): Promise<Response> {
   try {
     const { env } = context;
     const db = getDb(env);
@@ -163,7 +174,7 @@ export async function onRequestDelete(context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

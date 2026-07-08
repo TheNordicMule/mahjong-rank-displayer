@@ -1,15 +1,20 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import type { Game, Placement } from '../types';
 import { getLeaderboard } from '../utils/stats';
 import { formatSigned } from '../utils/format';
 import './Leaderboard.css';
 
-export default function Leaderboard({ games }) {
+interface LeaderboardProps {
+  games: Game[];
+}
+
+export default function Leaderboard({ games }: LeaderboardProps) {
   const entries = useMemo(() => {
     if (!games || games.length === 0) return [];
     const lb = getLeaderboard(games);
-    return lb.map(p => {
-      const placementCounts = {};
+    return lb.map((p) => {
+      const placementCounts: Placement = {};
       for (const r of [1, 2, 3, 4]) {
         placementCounts[r] = Math.round((p.placement[r] / 100) * p.games);
       }
@@ -53,7 +58,7 @@ export default function Leaderboard({ games }) {
             <span className="rt-col rt-total">{formatSigned(p.totalPoints)}</span>
             <span className="rt-col rt-avg">{p.avgRank.toFixed(2)}</span>
             <span className="rt-col rt-placements">
-              {[1, 2, 3, 4].map(r => (
+              {[1, 2, 3, 4].map((r) => (
                 <span key={r} className={`placement-count rank-${r}`}>
                   {p.placementCounts[r]}
                 </span>

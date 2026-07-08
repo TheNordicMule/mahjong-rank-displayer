@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { TrendPoint } from '../types';
 import './PointsTrend.css';
 
 const VIEWBOX_WIDTH = 600;
@@ -8,8 +9,21 @@ const PADDING_RIGHT = 16;
 const PADDING_TOP = 16;
 const PADDING_BOTTOM = 30;
 
-export default function PointsTrend({ trend }) {
-  const [drawn, setDrawn] = useState(false);
+interface ChartData {
+  linePath: string;
+  areaPath: string;
+  points: { x: number; y: number }[];
+  min: number;
+  max: number;
+  zeroY: number | null;
+}
+
+interface PointsTrendProps {
+  trend: TrendPoint[];
+}
+
+export default function PointsTrend({ trend }: PointsTrendProps) {
+  const [drawn, setDrawn] = useState<boolean>(false);
 
   useEffect(() => {
     if (!trend || trend.length < 2) return;
@@ -18,8 +32,8 @@ export default function PointsTrend({ trend }) {
     return () => cancelAnimationFrame(id);
   }, [trend]);
 
-  const chart = useMemo(() => {
-    const empty = {
+  const chart = useMemo<ChartData>(() => {
+    const empty: ChartData = {
       linePath: '',
       areaPath: '',
       points: [],
@@ -29,7 +43,7 @@ export default function PointsTrend({ trend }) {
     };
     if (!trend || trend.length < 2) return empty;
 
-    const values = trend.map(d => d.cumulative);
+    const values = trend.map((d) => d.cumulative);
     let minVal = Math.min(...values);
     let maxVal = Math.max(...values);
 
@@ -50,8 +64,8 @@ export default function PointsTrend({ trend }) {
     const chartHeight = chartBottom - chartTop;
     const count = trend.length;
 
-    const xFor = (i) => chartLeft + (i / (count - 1)) * chartWidth;
-    const yFor = (v) =>
+    const xFor = (i: number): number => chartLeft + (i / (count - 1)) * chartWidth;
+    const yFor = (v: number): number =>
       chartBottom - ((v - minVal) / (maxVal - minVal)) * chartHeight;
 
     const pts = trend.map((d, i) => ({
@@ -98,8 +112,14 @@ export default function PointsTrend({ trend }) {
         >
           <defs>
             <linearGradient id="pointsTrendArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" style={{ stopColor: 'var(--accent)', stopOpacity: 0.28 }} />
-              <stop offset="100%" style={{ stopColor: 'var(--accent)', stopOpacity: 0 }} />
+              <stop
+                offset="0%"
+                style={{ stopColor: 'var(--accent)', stopOpacity: 0.28 } as React.CSSProperties}
+              />
+              <stop
+                offset="100%"
+                style={{ stopColor: 'var(--accent)', stopOpacity: 0 } as React.CSSProperties}
+              />
             </linearGradient>
           </defs>
 
@@ -115,26 +135,20 @@ export default function PointsTrend({ trend }) {
 
           <path d={chart.areaPath} className="chart-area" fill="url(#pointsTrendArea)" />
 
-          <path
-            d={chart.linePath}
-            className={`chart-line ${drawn ? 'drawn' : ''}`}
-            fill="none"
-          />
+          <path d={chart.linePath} className={`chart-line ${drawn ? 'drawn' : ''}`} fill="none" />
 
           {chart.points.map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r="3.5"
-              className="chart-dot"
-            />
+            <circle key={i} cx={p.x} cy={p.y} r="3.5" className="chart-dot" />
           ))}
 
           <text x="8" y={PADDING_TOP + 10} className="chart-label chart-label-max">
             {chart.max.toLocaleString()}
           </text>
-          <text x="8" y={VIEWBOX_HEIGHT - PADDING_BOTTOM - 4} className="chart-label chart-label-min">
+          <text
+            x="8"
+            y={VIEWBOX_HEIGHT - PADDING_BOTTOM - 4}
+            className="chart-label chart-label-min"
+          >
             {chart.min.toLocaleString()}
           </text>
         </svg>

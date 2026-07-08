@@ -128,7 +128,9 @@
   border-radius: var(--radius-sm);
   background-color: var(--surface);
   border: 1px solid transparent;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .range-reference-row:hover {
@@ -251,7 +253,9 @@
   background-color: var(--surface);
   border: 1px solid transparent;
   align-items: center;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .range-table-row:hover {

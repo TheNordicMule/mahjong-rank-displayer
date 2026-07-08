@@ -3,9 +3,10 @@
  */
 
 import { eq, asc, desc } from 'drizzle-orm';
-import { getDb, games, gamePlayers } from '../../_db.js';
+import { getDb, games, gamePlayers } from '../../_db';
+import type { Env } from '../../types';
 
-export async function onRequestGet(context) {
+export async function onRequestGet(context: EventContext<Env, string, unknown>): Promise<Response> {
   try {
     const { env } = context;
     const db = getDb(env);
@@ -35,7 +36,7 @@ export async function onRequestGet(context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

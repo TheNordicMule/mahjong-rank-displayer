@@ -1,13 +1,17 @@
 import './RankTrend.css';
 
-const RANK_COLORS = {
+const RANK_COLORS: Record<number, string> = {
   1: 'badge-gold',
   2: 'badge-silver',
   3: 'badge-bronze',
-  4: 'badge-red'
+  4: 'badge-red',
 };
 
-export default function RankTrend({ ranks }) {
+interface RankTrendProps {
+  ranks: number[];
+}
+
+export default function RankTrend({ ranks }: RankTrendProps) {
   if (!ranks || ranks.length === 0) return null;
 
   return (

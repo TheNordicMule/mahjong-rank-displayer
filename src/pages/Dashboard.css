@@ -42,7 +42,11 @@
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   box-shadow: var(--shadow-sm);
 }
 
@@ -57,7 +61,9 @@
   color: var(--accent);
   border-color: var(--accent);
   font-weight: 700;
-  box-shadow: 0 0 0 2px var(--accent-glow), var(--shadow-sm);
+  box-shadow:
+    0 0 0 2px var(--accent-glow),
+    var(--shadow-sm);
 }
 
 .chip-selected:hover {

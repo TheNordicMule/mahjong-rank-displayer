@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { Placement } from '../types';
 import './PlacementPie.css';
 
 const RANKS = [1, 2, 3, 4];
@@ -8,14 +9,21 @@ const CY = 100;
 const OUTER_R = 80;
 const INNER_R = 52;
 
-function polar(cx, cy, r, angleRad) {
+function polar(cx: number, cy: number, r: number, angleRad: number): { x: number; y: number } {
   return {
     x: cx + r * Math.cos(angleRad),
     y: cy + r * Math.sin(angleRad),
   };
 }
 
-function describeDonutSlice(cx, cy, innerR, outerR, startAngleRad, sweepRad) {
+function describeDonutSlice(
+  cx: number,
+  cy: number,
+  innerR: number,
+  outerR: number,
+  startAngleRad: number,
+  sweepRad: number,
+): string {
   if (sweepRad >= Math.PI * 2 - 0.001) {
     const outerTop = polar(cx, cy, outerR, startAngleRad);
     const outerBottom = polar(cx, cy, outerR, startAngleRad + Math.PI);
@@ -49,8 +57,13 @@ function describeDonutSlice(cx, cy, innerR, outerR, startAngleRad, sweepRad) {
   );
 }
 
-export default function PlacementPie({ placement, totalGames }) {
-  const [drawn, setDrawn] = useState(false);
+interface PlacementPieProps {
+  placement: Placement;
+  totalGames: number;
+}
+
+export default function PlacementPie({ placement, totalGames }: PlacementPieProps) {
+  const [drawn, setDrawn] = useState<boolean>(false);
 
   useEffect(() => {
     setDrawn(false);
@@ -68,12 +81,10 @@ export default function PlacementPie({ placement, totalGames }) {
       const pct = placement[rank] ?? 0;
       const sweep = (pct / 100) * Math.PI * 2;
       const path =
-        pct > 0
-          ? describeDonutSlice(CX, CY, INNER_R, OUTER_R, currentAngle, sweep)
-          : null;
+        pct > 0 ? describeDonutSlice(CX, CY, INNER_R, OUTER_R, currentAngle, sweep) : null;
       currentAngle += sweep;
       return { rank, pct, path };
-    }).filter((s) => s.path);
+    }).filter((s): s is { rank: number; pct: number; path: string } => s.path !== null);
   }, [placement, hasData]);
 
   if (!hasData) {
@@ -122,20 +133,10 @@ export default function PlacementPie({ placement, totalGames }) {
               />
             ))}
 
-            <text
-              x={CX}
-              y={CY - 6}
-              textAnchor="middle"
-              className="placement-pie-total"
-            >
+            <text x={CX} y={CY - 6} textAnchor="middle" className="placement-pie-total">
               {totalGames.toLocaleString()}
             </text>
-            <text
-              x={CX}
-              y={CY + 14}
-              textAnchor="middle"
-              className="placement-pie-total-label"
-            >
+            <text x={CX} y={CY + 14} textAnchor="middle" className="placement-pie-total-label">
               games
             </text>
           </svg>

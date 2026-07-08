@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { Game, PlayerStats, TrendPoint } from '../types';
 import { useGames } from '../hooks/useGames';
 import { getPlayerStats, getPointsTrend } from '../utils/stats';
 import StatCard from '../components/StatCard';
@@ -12,15 +13,15 @@ import './Dashboard.css';
 
 export default function Dashboard() {
   const { games, loading, error } = useGames();
-  const [selected, setSelected] = useState('');
-  const [stats, setStats] = useState(null);
-  const [pointsTrend, setPointsTrend] = useState([]);
+  const [selected, setSelected] = useState<string>('');
+  const [stats, setStats] = useState<PlayerStats | null>(null);
+  const [pointsTrend, setPointsTrend] = useState<TrendPoint[]>([]);
   const navigate = useNavigate();
 
   const players = useMemo(() => {
-    const nameSet = new Set();
-    games.forEach(g => {
-      g.players.forEach(p => {
+    const nameSet = new Set<string>();
+    games.forEach((g: Game) => {
+      g.players.forEach((p) => {
         if (p.name && p.name.trim()) {
           nameSet.add(p.name.trim());
         }
@@ -45,7 +46,7 @@ export default function Dashboard() {
     }
   }, [selected, games]);
 
-  const handleSelect = (name) => {
+  const handleSelect = (name: string): void => {
     setSelected(name);
   };
 
@@ -76,7 +77,7 @@ export default function Dashboard() {
         <div className="selector-section">
           <span className="selector-label">Select player</span>
           <div className="player-strip">
-            {players.map(name => (
+            {players.map((name) => (
               <button
                 key={name}
                 className={`player-chip ${name === selected ? 'chip-selected' : ''}`}
@@ -90,7 +91,11 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="empty-state">
-          <p>No players yet.<br />Record your first game to start tracking stats.</p>
+          <p>
+            No players yet.
+            <br />
+            Record your first game to start tracking stats.
+          </p>
           <button className="btn btn-primary" onClick={() => navigate('/record')}>
             Record Game
           </button>

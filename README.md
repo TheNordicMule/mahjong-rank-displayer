@@ -45,21 +45,26 @@ This project uses Cloudflare D1 as its database, served via Cloudflare Pages Fun
 ### Setup Steps
 
 1. **Create the D1 database**:
+
    ```bash
    npm run db:create
    ```
+
    Copy the printed `database_id` (a UUID) and paste it into `wrangler.toml` replacing the existing `database_id`.
 
 2. **Run database migrations**:
+
    ```bash
    npm run db:migrate:local   # apply migrations to local dev D1
    npm run db:migrate         # apply migrations to remote D1
    ```
 
 3. **Start local development (API + Vite)**:
+
    ```bash
    npm run dev:all
    ```
+
    This runs both Pages Functions and the Vite dev server together.
 
 4. **Deploy to Cloudflare Pages**:

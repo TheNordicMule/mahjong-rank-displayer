@@ -1,11 +1,12 @@
+import type { Game, PlayerStats, LeaderboardEntry, TrendPoint, Placement } from '../types';
 import { processGame } from './scoring';
 
-export function getLastRanks(games, playerName, x) {
-  const ranks = [];
+export function getLastRanks(games: Game[], playerName: string, x: number): number[] {
+  const ranks: number[] = [];
   for (const game of games) {
     if (ranks.length >= x) break;
     const processed = processGame(game);
-    const entry = processed.find(p => p.name === playerName);
+    const entry = processed.find((p) => p.name === playerName);
     if (entry) {
       ranks.push(entry.rank);
     }
@@ -15,30 +16,36 @@ export function getLastRanks(games, playerName, x) {
 
 // Returns cumulative points trend oldest→newest.
 // Each entry: { points (that game), cumulative, timestamp }
-export function getPointsTrend(games, playerName) {
-  const trend = [];
+export function getPointsTrend(games: Game[], playerName: string): TrendPoint[] {
+  const trend: TrendPoint[] = [];
   let cumulative = 0;
   const chronological = [...games].reverse();
   for (const game of chronological) {
     const processed = processGame(game);
-    const entry = processed.find(p => p.name === playerName);
+    const entry = processed.find((p) => p.name === playerName);
     if (entry) {
       cumulative += entry.points;
       trend.push({
         points: entry.points,
         cumulative,
-        timestamp: game.timestamp
+        timestamp: game.timestamp,
       });
     }
   }
   return trend;
 }
 
-export function getPlayerStats(games, playerName) {
-  const relevant = [];
+export function getPlayerStats(games: Game[], playerName: string): PlayerStats {
+  const relevant: {
+    name: string;
+    rawScore: number;
+    rank: number;
+    chombo: boolean;
+    points: number;
+  }[] = [];
   for (const game of games) {
     const processed = processGame(game);
-    const entry = processed.find(p => p.name === playerName);
+    const entry = processed.find((p) => p.name === playerName);
     if (entry) {
       relevant.push(entry);
     }
@@ -50,19 +57,19 @@ export function getPlayerStats(games, playerName) {
     return {
       totalGames: 0,
       avgRank: 0,
-      placement: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      placement: { 1: 0, 2: 0, 3: 0, 4: 0 } as Placement,
       avgScore: 0,
       totalPoints: 0,
-      lastRanks: []
+      lastRanks: [],
     };
   }
 
-  const placementCount = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const placementCount: Placement = { 1: 0, 2: 0, 3: 0, 4: 0 };
   let sumRank = 0;
   let sumScore = 0;
   let sumPoints = 0;
 
-  relevant.forEach(e => {
+  relevant.forEach((e) => {
     placementCount[e.rank] = (placementCount[e.rank] || 0) + 1;
     sumRank += e.rank;
     sumScore += e.rawScore;
@@ -73,7 +80,7 @@ export function getPlayerStats(games, playerName) {
   const avgScore = Math.round((sumScore / totalGames) * 100) / 100;
   const totalPoints = Math.round(sumPoints * 100) / 100;
 
-  const placement = {};
+  const placement: Placement = {};
   for (const r of [1, 2, 3, 4]) {
     placement[r] = Math.round((placementCount[r] / totalGames) * 1000) / 10;
   }
@@ -83,19 +90,22 @@ export function getPlayerStats(games, playerName) {
   return { totalGames, avgRank, placement, avgScore, totalPoints, lastRanks };
 }
 
-export function getLeaderboard(games) {
-  const playerMap = {};
+export function getLeaderboard(games: Game[]): LeaderboardEntry[] {
+  const playerMap: Record<
+    string,
+    { name: string; games: number; sumRank: number; sumPoints: number; placementCount: Placement }
+  > = {};
 
   for (const game of games) {
     const processed = processGame(game);
-    processed.forEach(e => {
+    processed.forEach((e) => {
       if (!playerMap[e.name]) {
         playerMap[e.name] = {
           name: e.name,
           games: 0,
           sumRank: 0,
           sumPoints: 0,
-          placementCount: { 1: 0, 2: 0, 3: 0, 4: 0 }
+          placementCount: { 1: 0, 2: 0, 3: 0, 4: 0 },
         };
       }
       playerMap[e.name].games += 1;
@@ -105,10 +115,10 @@ export function getLeaderboard(games) {
     });
   }
 
-  const leaderboard = Object.values(playerMap).map(p => {
+  const leaderboard = Object.values(playerMap).map((p) => {
     const avgRank = p.games > 0 ? Math.round((p.sumRank / p.games) * 100) / 100 : 0;
     const totalPoints = Math.round(p.sumPoints * 100) / 100;
-    const placement = {};
+    const placement: Placement = {};
     for (const r of [1, 2, 3, 4]) {
       placement[r] = p.games > 0 ? Math.round((p.placementCount[r] / p.games) * 1000) / 10 : 0;
     }

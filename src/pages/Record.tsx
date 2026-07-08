@@ -1,76 +1,94 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { Player } from '../types';
 import * as storage from '../utils/storage';
 import { RETURN_SCORE } from '../utils/scoring';
 import './Record.css';
 
-const EMPTY_PLAYERS = [
+interface PlayerInput {
+  name: string;
+  score: string;
+  chombo: boolean;
+}
+
+const EMPTY_PLAYERS: PlayerInput[] = [
   { name: '', score: '', chombo: false },
   { name: '', score: '', chombo: false },
   { name: '', score: '', chombo: false },
-  { name: '', score: '', chombo: false }
+  { name: '', score: '', chombo: false },
 ];
 
 export default function Record() {
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const [players, setPlayers] = useState(EMPTY_PLAYERS.map(p => ({ ...p })));
-  const [suggestions, setSuggestions] = useState([]);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [loadingGame, setLoadingGame] = useState(false);
-  const [gameNotFound, setGameNotFound] = useState(false);
+  const [players, setPlayers] = useState<PlayerInput[]>(EMPTY_PLAYERS.map((p) => ({ ...p })));
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [error, setError] = useState<string>('');
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saved, setSaved] = useState<boolean>(false);
+  const [loadingGame, setLoadingGame] = useState<boolean>(false);
+  const [gameNotFound, setGameNotFound] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    storage.getPlayers().then(setSuggestions).catch(() => {});
+    storage
+      .getPlayers()
+      .then(setSuggestions)
+      .catch(() => {});
   }, []);
 
   // In edit mode, fetch existing game and prefill form
   useEffect(() => {
     if (!isEdit) return;
     setLoadingGame(true);
-    storage.getGames().then(games => {
-      const game = games.find(g => g.id === id);
-      if (game) {
-        setPlayers(game.players.map(p => ({
-          name: p.name,
-          score: String(p.rawScore),
-          chombo: p.chombo,
-        })));
-      } else {
-        setGameNotFound(true);
-      }
-      setLoadingGame(false);
-    }).catch(() => {
-      setError('Failed to load game.');
-      setLoadingGame(false);
-    });
+    storage
+      .getGames()
+      .then((games) => {
+        const game = games.find((g) => g.id === id);
+        if (game) {
+          setPlayers(
+            game.players.map((p) => ({
+              name: p.name,
+              score: String(p.rawScore),
+              chombo: p.chombo,
+            })),
+          );
+        } else {
+          setGameNotFound(true);
+        }
+        setLoadingGame(false);
+      })
+      .catch(() => {
+        setError('Failed to load game.');
+        setLoadingGame(false);
+      });
   }, [id, isEdit]);
 
   // Refill most recent names on mount (skip in edit mode)
   useEffect(() => {
     if (isEdit) return;
-    storage.getLatestNames().then(names => {
-      if (names && names.length > 0) {
-        setPlayers(prev => prev.map((p, i) => ({
-          ...p,
-          name: names[i] ?? p.name
-        })));
-      }
-    }).catch(() => {});
+    storage
+      .getLatestNames()
+      .then((names) => {
+        if (names && names.length > 0) {
+          setPlayers((prev) =>
+            prev.map((p, i) => ({
+              ...p,
+              name: names[i] ?? p.name,
+            })),
+          );
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const updatePlayer = (index, field, value) => {
-    const updated = players.map((p, i) =>
-      i === index ? { ...p, [field]: value } : { ...p }
-    );
+  const updatePlayer = (index: number, field: keyof PlayerInput, value: string | boolean): void => {
+    const updated = players.map((p, i) => (i === index ? { ...p, [field]: value } : { ...p }));
     setPlayers(updated);
     setError('');
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     // Validate
     for (let i = 0; i < players.length; i++) {
       if (!players[i].name.trim()) {
@@ -83,7 +101,7 @@ export default function Record() {
       }
     }
 
-    const names = players.map(p => p.name.trim());
+    const names = players.map((p) => p.name.trim());
     const nameSet = new Set(names);
     if (nameSet.size !== names.length) {
       setError('Player names must be unique');
@@ -96,16 +114,16 @@ export default function Record() {
       return;
     }
 
-    const data = players.map(p => ({
+    const data: Player[] = players.map((p) => ({
       name: p.name.trim(),
       rawScore: Number(p.score),
-      chombo: p.chombo
+      chombo: p.chombo,
     }));
 
     setSaving(true);
     try {
       if (isEdit) {
-        await storage.updateGame(id, data);
+        await storage.updateGame(id!, data);
       } else {
         await storage.addGame(data);
       }
@@ -113,13 +131,13 @@ export default function Record() {
       setTimeout(() => {
         navigate('/history');
       }, 800);
-    } catch (e) {
-      setError(`Failed to save game: ${e.message}`);
+    } catch (e: unknown) {
+      setError(`Failed to save game: ${e instanceof Error ? e.message : String(e)}`);
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     navigate(-1);
   };
 
@@ -137,7 +155,9 @@ export default function Record() {
         <h1 className="page-title">Edit Game</h1>
         <div className="error-box">Game not found.</div>
         <div className="action-row">
-          <button className="btn btn-secondary" onClick={handleCancel}>Cancel</button>
+          <button className="btn btn-secondary" onClick={handleCancel}>
+            Cancel
+          </button>
         </div>
       </div>
     );
@@ -177,11 +197,11 @@ export default function Record() {
                 className="input"
                 placeholder="Player name"
                 value={p.name}
-                onChange={e => updatePlayer(i, 'name', e.target.value)}
+                onChange={(e) => updatePlayer(i, 'name', e.target.value)}
                 list={`suggest-${i}`}
               />
               <datalist id={`suggest-${i}`}>
-                {suggestions.map(s => (
+                {suggestions.map((s) => (
                   <option key={s} value={s} />
                 ))}
               </datalist>
@@ -190,13 +210,13 @@ export default function Record() {
                 placeholder="Score"
                 type="number"
                 value={p.score}
-                onChange={e => updatePlayer(i, 'score', e.target.value)}
+                onChange={(e) => updatePlayer(i, 'score', e.target.value)}
               />
               <label className="chombo-toggle">
                 <input
                   type="checkbox"
                   checked={p.chombo}
-                  onChange={e => updatePlayer(i, 'chombo', e.target.checked)}
+                  onChange={(e) => updatePlayer(i, 'chombo', e.target.checked)}
                 />
                 <span className="chombo-label">Chombo</span>
               </label>
@@ -206,9 +226,11 @@ export default function Record() {
       </div>
 
       <div className="action-row">
-        <button className="btn btn-secondary" onClick={handleCancel} disabled={saving}>Cancel</button>
+        <button className="btn btn-secondary" onClick={handleCancel} disabled={saving}>
+          Cancel
+        </button>
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-          {isEdit ? (saving ? 'Saving…' : 'Save Changes') : (saving ? 'Saving…' : 'Save')}
+          {isEdit ? (saving ? 'Saving…' : 'Save Changes') : saving ? 'Saving…' : 'Save'}
         </button>
       </div>
     </div>
