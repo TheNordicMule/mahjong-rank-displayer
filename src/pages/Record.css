@@ -1,0 +1,161 @@
+.record {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.uma-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 12px 16px;
+}
+
+.uma-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.uma-values {
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.uma-divider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--border);
+}
+
+.error-box {
+  background-color: var(--danger-soft);
+  color: var(--text);
+  border: 1px solid rgba(232, 93, 93, 0.25);
+  border-left: 4px solid var(--danger);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.success-state {
+  text-align: center;
+  padding: 52px 20px;
+  color: var(--success);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: var(--radius);
+  background-color: var(--success-soft);
+}
+
+.success-state p {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.success-hint {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.player-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.row-label {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.row-label.rank-1 {
+  background-color: var(--gold-soft);
+  color: var(--gold);
+}
+
+.row-label.rank-2 {
+  background-color: var(--silver-soft);
+  color: var(--silver);
+}
+
+.row-label.rank-3 {
+  background-color: var(--bronze-soft);
+  color: var(--bronze);
+}
+
+.row-label.rank-4 {
+  background-color: var(--red-rank-soft);
+  color: var(--red-rank);
+}
+
+.row-fields {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+.row-fields .input {
+  flex: 1;
+}
+
+.score-input {
+  max-width: 150px;
+  text-align: right;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .uma-info {
+    gap: 6px 10px;
+  }
+
+  .uma-divider {
+    display: none;
+  }
+
+  .row-fields {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .score-input {
+    max-width: 100%;
+    text-align: left;
+  }
+}
