@@ -5,5 +5,5 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "mahjong-rank-displayer-db"
-database_id = "<REPLACE_WITH_D1_DATABASE_ID>"
+database_id = "01ad6282-752f-4970-8412-ed8f528b5eb7"
 migrations_dir = "migrations"
