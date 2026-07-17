@@ -1,26 +1,28 @@
 import type { Game, PlayerStats, LeaderboardEntry, TrendPoint, Placement } from '../types';
 import { processGame } from './scoring';
 
+// Returns the player's rank for their x most recent games,
+// with the most recent on the left and the oldest of the x on the right.
+// `games` is expected to be sorted oldest→newest (timestamp ASC).
 export function getLastRanks(games: Game[], playerName: string, x: number): number[] {
   const ranks: number[] = [];
-  for (const game of games) {
-    if (ranks.length >= x) break;
-    const processed = processGame(game);
+  for (let i = games.length - 1; i >= 0 && ranks.length < x; i--) {
+    const processed = processGame(games[i]);
     const entry = processed.find((p) => p.name === playerName);
     if (entry) {
       ranks.push(entry.rank);
     }
   }
-  return ranks.reverse();
+  return ranks;
 }
 
 // Returns cumulative points trend oldest→newest.
-// Each entry: { points (that game), cumulative, timestamp }
+// Each entry: { points (that game), cumulative, timestamp }.
+// `games` is expected to be sorted oldest→newest (timestamp ASC).
 export function getPointsTrend(games: Game[], playerName: string): TrendPoint[] {
   const trend: TrendPoint[] = [];
   let cumulative = 0;
-  const chronological = [...games].reverse();
-  for (const game of chronological) {
+  for (const game of games) {
     const processed = processGame(game);
     const entry = processed.find((p) => p.name === playerName);
     if (entry) {
