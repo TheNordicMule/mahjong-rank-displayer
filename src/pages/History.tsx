@@ -16,9 +16,7 @@ export default function History() {
     // (game #1 is the earliest ever played). Display order is descending
     // so the most recent game appears first — independent of API order.
     const numberById = new Map(
-      [...games]
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .map((g, i) => [g.id, i + 1] as const),
+      [...games].sort((a, b) => a.timestamp - b.timestamp).map((g, i) => [g.id, i + 1] as const),
     );
     return [...games]
       .sort((a, b) => b.timestamp - a.timestamp)
