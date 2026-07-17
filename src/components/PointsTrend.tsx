@@ -84,10 +84,12 @@ export default function PointsTrend({ trend }: PointsTrendProps) {
     if (!trend || trend.length < 2) return empty;
 
     const cumulativeValues = trend.map((d) => d.cumulative);
-    const barTipValues = trend.map((d) => d.cumulative + d.points);
+    // Cumulative value BEFORE this game — for the first game this is 0,
+    // for subsequent games it's the previous cumulative point.
+    const beforeValues = trend.map((d) => d.cumulative - d.points);
 
-    let minVal = Math.min(...cumulativeValues, ...barTipValues);
-    let maxVal = Math.max(...cumulativeValues, ...barTipValues);
+    let minVal = Math.min(...cumulativeValues, ...beforeValues);
+    let maxVal = Math.max(...cumulativeValues, ...beforeValues);
 
     if (minVal === maxVal) {
       minVal -= 1;
@@ -112,15 +114,17 @@ export default function PointsTrend({ trend }: PointsTrendProps) {
 
     const points: ChartPoint[] = trend.map((d, i) => {
       const cy = yFor(d.cumulative);
-      const tipY = yFor(d.cumulative + d.points);
+      // Anchor the bar at the cumulative value BEFORE this game so the bar
+      // visually represents the per-game swing from "before" to "after".
+      const baseY = yFor(d.cumulative - d.points);
       return {
         x: xFor(i),
         y: cy,
         points: d.points,
         cumulative: d.cumulative,
         timestamp: d.timestamp,
-        barTopY: Math.min(cy, tipY),
-        barBottomY: Math.max(cy, tipY),
+        barTopY: Math.min(cy, baseY),
+        barBottomY: Math.max(cy, baseY),
       };
     });
 
