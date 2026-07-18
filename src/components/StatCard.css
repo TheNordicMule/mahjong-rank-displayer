@@ -45,6 +45,19 @@
   margin-top: 6px;
 }
 
+.stat-range-value {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.stat-range-best { color: var(--gold); }
+.stat-range-worst { color: var(--red-rank); }
+
 /* Highlight the most important stat (Average Rank) */
 .stats-grid > :nth-child(2) .stat-card {
   border-color: var(--accent);
