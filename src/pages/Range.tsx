@@ -52,6 +52,7 @@ export default function Range() {
       return {
         number: index + 1,
         date: formatDate(g.timestamp),
+        timestamp: g.timestamp,
         winner: winner?.name || '—',
         id: g.id,
       };
@@ -277,11 +278,13 @@ export default function Range() {
                 <div key={row.id} className="range-reference-row">
                   <div className="range-reference-info">
                     <span className="range-reference-number">#{row.number}</span>
-                    <span className="range-reference-date">{row.date}</span>
-                    <span className="range-reference-winner">
-                      <span className="range-reference-winner-label">Winner</span>
-                      {row.winner}
-                    </span>
+                    <div className="range-reference-meta">
+                      <time className="range-reference-date" dateTime={new Date(row.timestamp).toISOString()}>{row.date}</time>
+                      <span className="range-reference-winner">
+                        <span className="range-reference-winner-label">Winner</span>
+                        {row.winner}
+                      </span>
+                    </div>
                   </div>
                   <div className="range-reference-actions">
                     <button

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
 }
 
 /* Input card */
@@ -10,6 +11,7 @@
   flex-direction: column;
   gap: 14px;
   padding: 20px;
+  min-width: 0;
 }
 
 .range-fields {
@@ -18,8 +20,8 @@
   gap: 12px;
 }
 
-.range-date-fields { display: flex; align-items: flex-end; gap: 12px; padding-top: 2px; border-top: 1px solid var(--border); }
-.range-date-fields .input { min-width: 0; }
+.range-date-fields { display: flex; align-items: flex-end; gap: 12px; padding-top: 2px; border-top: 1px solid var(--border); min-width: 0; width: 100%; }
+.range-date-fields .input { min-width: 0; width: 100%; max-width: 100%; }
 .range-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 14px; border-left: 3px solid var(--accent); border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--text-secondary); font-size: 13px; }
 .range-summary strong { color: var(--text); }
 
@@ -160,6 +162,13 @@
   flex: 1;
 }
 
+.range-reference-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .range-reference-number {
   display: inline-flex;
   align-items: center;
@@ -175,8 +184,9 @@
 }
 
 .range-reference-date {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -370,7 +380,9 @@
 
   .range-field .input {
     min-width: 0;
+    width: 100%;
     max-width: 100%;
+    font-size: 16px;
   }
 
   .range-fields {
@@ -398,7 +410,7 @@
   }
 
   .range-reference-date {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .range-reference-winner-label {

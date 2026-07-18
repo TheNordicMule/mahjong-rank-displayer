@@ -8,7 +8,7 @@ export default function Layout() {
         <span className="nav-title">
           <span className="nav-title-accent">麻将</span>战绩
         </span>
-        <div className="nav-links">
+        <div className="nav-links" aria-label="Primary navigation">
           <NavLink
             to="/"
             end
