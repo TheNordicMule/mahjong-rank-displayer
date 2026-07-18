@@ -13,166 +13,123 @@ interface RangeResult extends LeaderboardEntry {
   placementCount: Placement;
 }
 
+const PRESETS: { key: number | 'all'; label: string }[] = [
+  { key: 'all', label: 'All games' },
+  { key: 5, label: 'Last 5' },
+  { key: 10, label: 'Last 10' },
+  { key: 20, label: 'Last 20' },
+];
+
+function formatDay(ts: number): string {
+  return formatDate(ts).slice(0, 10);
+}
+
 export default function Range() {
-  const [start, setStart] = useState<string>('');
-  const [end, setEnd] = useState<string>('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [totalGames, setTotalGames] = useState<number>(0);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [fetching, setFetching] = useState<boolean>(false);
-  const [results, setResults] = useState<RangeResult[] | null>(null);
-  const [rangeCount, setRangeCount] = useState<number>(0);
   const [error, setError] = useState<string>('');
-  const [warnings, setWarnings] = useState<string>('');
-  const [referenceOpen, setReferenceOpen] = useState<boolean>(true);
+  const [start, setStart] = useState<number>(1);
+  const [end, setEnd] = useState<number>(1);
+  const [referenceOpen, setReferenceOpen] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
       try {
         const games = await storage.getGames();
-        setTotalGames(games.length);
         setAllGames(games);
         if (games.length > 0) {
-          setStart('1');
-          setEnd(String(games.length));
+          setStart(1);
+          setEnd(games.length);
         }
       } catch (e) {
-        setError('Failed to load game count');
+        setError('Failed to load games');
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
+  // Game #1 is the earliest game ever played (API returns timestamp ASC,
+  // but sort defensively so slider endpoints always map correctly).
+  const chronological = useMemo(
+    () => [...allGames].sort((a, b) => a.timestamp - b.timestamp),
+    [allGames],
+  );
+  const totalGames = chronological.length;
+
   const referenceRows = useMemo(() => {
-    return allGames.map((g, index) => {
+    return chronological.map((g, index) => {
       const processed = processGame(g);
       const winner = processed.find((p) => p.rank === 1);
       return {
         number: index + 1,
-        date: formatDate(g.timestamp),
+        date: formatDay(g.timestamp),
         timestamp: g.timestamp,
         winner: winner?.name || '—',
         id: g.id,
       };
     });
-  }, [allGames]);
+  }, [chronological]);
 
-  const runCalculation = async (s: number, e: number): Promise<void> => {
-    setError('');
-    setWarnings('');
-    setFetching(true);
-    setResults(null);
+  // Results are derived locally and update live as the sliders move —
+  // no network round-trip or Calculate button needed.
+  const selectedGames = useMemo(
+    () => chronological.slice(start - 1, end),
+    [chronological, start, end],
+  );
 
-    try {
-      const clampedStart = Math.max(1, s);
-      const clampedEnd = totalGames > 0 ? Math.min(totalGames, e) : e;
+  const results = useMemo<RangeResult[]>(() => {
+    if (selectedGames.length === 0) return [];
+    const leaderboard = getLeaderboard(selectedGames);
 
-      if (clampedStart > clampedEnd) {
-        setError('No games in the selected range.');
-        setFetching(false);
-        return;
-      }
-
-      let games = await storage.getGamesRange(clampedStart, clampedEnd);
-      if (startDate || endDate) {
-        const from = startDate ? new Date(`${startDate}T00:00:00`).getTime() : -Infinity;
-        const to = endDate ? new Date(`${endDate}T23:59:59.999`).getTime() : Infinity;
-        games = games.filter((game) => game.timestamp >= from && game.timestamp <= to);
-      }
-      games = games.filter((game) => {
-        const chronological = [...allGames].sort((a, b) => a.timestamp - b.timestamp);
-        const index = chronological.findIndex((item) => item.id === game.id);
-        return index >= clampedStart - 1 && index < clampedEnd;
+    // Compute raw placement counts (getLeaderboard only gives %)
+    const rawCounts: Record<string, Placement> = {};
+    selectedGames.forEach((game) => {
+      const processed = processGame(game);
+      processed.forEach((p) => {
+        if (!rawCounts[p.name]) {
+          rawCounts[p.name] = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        }
+        rawCounts[p.name][p.rank]++;
       });
+    });
 
-      if (!games || games.length === 0) {
-        setRangeCount(0);
-        setResults([]);
-      } else {
-        setRangeCount(games.length);
-        const leaderboard = getLeaderboard(games);
+    return leaderboard.map((p) => ({
+      ...p,
+      avgPoints: p.games > 0 ? Math.round((p.totalPoints / p.games) * 100) / 100 : 0,
+      placementCount: rawCounts[p.name] || { 1: 0, 2: 0, 3: 0, 4: 0 },
+    }));
+  }, [selectedGames]);
 
-        // Compute raw placement counts (getLeaderboard only gives %)
-        const rawCounts: Record<string, Placement> = {};
-        games.forEach((game) => {
-          const processed = processGame(game);
-          processed.forEach((p) => {
-            if (!rawCounts[p.name]) {
-              rawCounts[p.name] = { 1: 0, 2: 0, 3: 0, 4: 0 };
-            }
-            rawCounts[p.name][p.rank]++;
-          });
-        });
-
-        const enriched: RangeResult[] = leaderboard.map((p) => ({
-          ...p,
-          avgPoints: p.games > 0 ? Math.round((p.totalPoints / p.games) * 100) / 100 : 0,
-          placementCount: rawCounts[p.name] || { 1: 0, 2: 0, 3: 0, 4: 0 },
-        }));
-
-        setResults(enriched);
-      }
-
-      if (s !== clampedStart || e !== clampedEnd) {
-        const msgs: string[] = [];
-        if (s !== clampedStart) msgs.push(`Start clamped to ${clampedStart}`);
-        if (e !== clampedEnd) msgs.push(`End clamped to ${clampedEnd}`);
-        setWarnings(`Range adjusted: ${msgs.join(', ')}.`);
-      }
-    } catch (e: unknown) {
-      setError(`Error fetching games: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setFetching(false);
-    }
+  const handleStartChange = (value: number): void => {
+    setStart(Math.min(value, end));
   };
 
-  const handleCalculate = (): void => {
-    const s = parseInt(start, 10);
-    const e = parseInt(end, 10);
-    const hasNumbers = !isNaN(s) && !isNaN(e);
-    const hasDates = startDate !== '' || endDate !== '';
-
-    if (!hasNumbers && !hasDates) {
-      setError('Please enter game numbers, a date range, or both.');
-      return;
-    }
-
-    if (hasNumbers && s > e) {
-      setError('Start game must be less than or equal to end game.');
-      return;
-    }
-
-    if (startDate && endDate && startDate > endDate) {
-      setError('From date must be on or before to date.');
-      return;
-    }
-
-    // When only dates are provided, default to the full game-number range
-    const normStart = hasNumbers ? s : 1;
-    const normEnd = hasNumbers ? e : totalGames;
-    runCalculation(normStart, normEnd);
+  const handleEndChange = (value: number): void => {
+    setEnd(Math.max(value, start));
   };
 
   const applyPreset = (count: number | 'all'): void => {
     if (totalGames === 0) return;
-    const endNum = totalGames;
-    const startNum = count === 'all' ? 1 : Math.max(1, totalGames - count + 1);
-    setStart(String(startNum));
-    setEnd(String(endNum));
-    // Clear date filters so presets are not silently narrowed by stale dates
-    setStartDate('');
-    setEndDate('');
-    runCalculation(startNum, endNum);
+    setStart(count === 'all' ? 1 : Math.max(1, totalGames - count + 1));
+    setEnd(totalGames);
   };
 
+  const isPresetSelected = (key: number | 'all'): boolean => {
+    if (totalGames === 0 || end !== totalGames) return false;
+    if (key === 'all') return start === 1;
+    return start === Math.max(1, totalGames - key + 1);
+  };
+
+  // Moving one bound past the other pushes the opposite bound along, so
+  // reference picks can never create an inverted range.
   const handleReferenceSet = (number: number, bound: 'start' | 'end'): void => {
     if (bound === 'start') {
-      setStart(String(number));
+      setStart(number);
+      if (number > end) setEnd(number);
     } else {
-      setEnd(String(number));
+      setEnd(number);
+      if (number < start) setStart(number);
     }
   };
 
@@ -185,152 +142,170 @@ export default function Range() {
     );
   }
 
-  const hasResults = results !== null;
-  const selectedStart = start || (totalGames > 0 ? '1' : '');
-  const selectedEnd = end || (totalGames > 0 ? String(totalGames) : '');
-
-  const presets: { key: number | 'all'; label: string }[] = [
-    { key: 'all', label: 'All games' },
-    { key: 5, label: 'Last 5' },
-    { key: 10, label: 'Last 10' },
-    { key: 20, label: 'Last 20' },
-  ];
+  const startGame = chronological[start - 1];
+  const endGame = chronological[end - 1];
+  const rangeCount = end - start + 1;
+  // Positions within the full timeline, as percentages, for the selection bar.
+  const span = Math.max(totalGames - 1, 1);
+  const fromPct = ((start - 1) / span) * 100;
+  const toPct = ((end - 1) / span) * 100;
 
   return (
     <div className="range page-mount">
       <h1 className="page-title">Range Aggregation</h1>
 
-      <div className="range-inputs card">
-        <div className="range-fields">
-          <div className="range-field">
-            <label className="range-label" htmlFor="start-game">
-              From game #
-            </label>
-            <input
-              id="start-game"
-              className="input"
-              type="number"
-              min="1"
-              max={totalGames || 1}
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-              placeholder="1"
-            />
-          </div>
-          <div className="range-sep">→</div>
-          <div className="range-field">
-            <label className="range-label" htmlFor="end-game">
-              To game #
-            </label>
-            <input
-              id="end-game"
-              className="input"
-              type="number"
-              min="1"
-              max={totalGames || 1}
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-              placeholder={totalGames > 0 ? String(totalGames) : '?'}
-            />
-          </div>
-        </div>
-
-        <div className="range-date-fields">
-          <div className="range-field"><label className="range-label" htmlFor="start-date">From date (optional)</label><input id="start-date" className="input" type="date" value={startDate} max={endDate || undefined} onChange={(e) => setStartDate(e.target.value)} /></div>
-          <div className="range-sep">→</div>
-          <div className="range-field"><label className="range-label" htmlFor="end-date">To date (optional)</label><input id="end-date" className="input" type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} /></div>
-        </div>
-
-        <div className="range-presets">
-          <span className="range-presets-label">Quick select</span>
-          <div className="range-preset-buttons">
-            {presets.map((preset) => (
-              <button
-                key={String(preset.key)}
-                className={`btn btn-secondary btn-preset${(((preset.key === 'all' && selectedStart === '1') || (typeof preset.key === 'number' && selectedStart === String(Math.max(1, totalGames - preset.key + 1)))) && selectedEnd === String(totalGames)) ? ' is-selected' : ''}`}
-                onClick={() => applyPreset(preset.key)}
-                disabled={totalGames === 0}
-                aria-pressed={((preset.key === 'all' && selectedStart === '1') || (typeof preset.key === 'number' && selectedStart === String(Math.max(1, totalGames - preset.key + 1)))) && selectedEnd === String(totalGames)}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="range-bounds-hint">
-          {totalGames > 0
-            ? `Total games: ${totalGames} (valid range: 1 – ${totalGames})`
-            : 'No games recorded yet'}
-        </div>
-        <button
-          className="btn btn-primary range-calc-btn"
-          onClick={handleCalculate}
-          disabled={fetching || totalGames === 0}
-        >
-          {fetching ? 'Calculating…' : 'Calculate'}
-        </button>
-      </div>
-
-      {totalGames > 0 && (
-        <div className="range-reference card">
-          <button
-            className="range-reference-toggle"
-            onClick={() => setReferenceOpen((o) => !o)}
-            aria-expanded={referenceOpen}
-          >
-            <span>Game reference</span>
-            <span className="range-reference-chevron">{referenceOpen ? '▾' : '▸'}</span>
-          </button>
-          {referenceOpen && (
-            <div className="range-reference-list">
-              {referenceRows.map((row) => (
-                <div key={row.id} className="range-reference-row">
-                  <div className="range-reference-info">
-                    <span className="range-reference-number">#{row.number}</span>
-                    <div className="range-reference-meta">
-                      <time className="range-reference-date" dateTime={new Date(row.timestamp).toISOString()}>{row.date}</time>
-                      <span className="range-reference-winner">
-                        <span className="range-reference-winner-label">Winner</span>
-                        {row.winner}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="range-reference-actions">
-                    <button
-                      className={`btn btn-reference${start === String(row.number) ? ' is-selected' : ''}`}
-                      onClick={() => handleReferenceSet(row.number, 'start')}
-                    >
-                      From
-                    </button>
-                    <button
-                      className={`btn btn-reference${end === String(row.number) ? ' is-selected' : ''}`}
-                      onClick={() => handleReferenceSet(row.number, 'end')}
-                    >
-                      To
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {error && <div className="error-box">{error}</div>}
 
-      {warnings && !error && <div className="warning-box">{warnings}</div>}
-
-      {(start || end || startDate || endDate) && <div className="range-summary" aria-live="polite"><strong>Selected range</strong><span>{selectedStart}–{selectedEnd} games</span>{(startDate || endDate) && <span>{startDate || 'Any date'} → {endDate || 'Any date'}</span>}<span className="range-summary-hint">Press Calculate to update results</span></div>}
-
-      {hasResults && results.length === 0 && (
+      {totalGames === 0 && !error ? (
         <div className="empty-state">
-          <p>No games found in the selected range.</p>
+          <p>No games recorded yet.</p>
+          <Link to="/record" className="btn btn-primary">
+            Record Game
+          </Link>
         </div>
-      )}
-
-      {hasResults && results.length > 0 && (
+      ) : (
         <>
+          <div className="range-picker card">
+            <div className="range-presets">
+              <span className="range-presets-label">Quick select</span>
+              <div className="range-preset-buttons">
+                {PRESETS.map((preset) => (
+                  <button
+                    key={String(preset.key)}
+                    className={`btn btn-secondary btn-preset${isPresetSelected(preset.key) ? ' is-selected' : ''}`}
+                    onClick={() => applyPreset(preset.key)}
+                    aria-pressed={isPresetSelected(preset.key)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="range-slider">
+              <div className="range-slider-endpoints">
+                <div className="range-endpoint">
+                  <span className="range-endpoint-label">From</span>
+                  <span className="range-endpoint-value">#{start}</span>
+                  {startGame && (
+                    <time
+                      className="range-endpoint-date"
+                      dateTime={new Date(startGame.timestamp).toISOString()}
+                    >
+                      {formatDay(startGame.timestamp)}
+                    </time>
+                  )}
+                </div>
+                <div className="range-endpoint range-endpoint-right">
+                  <span className="range-endpoint-label">To</span>
+                  <span className="range-endpoint-value">#{end}</span>
+                  {endGame && (
+                    <time
+                      className="range-endpoint-date"
+                      dateTime={new Date(endGame.timestamp).toISOString()}
+                    >
+                      {formatDay(endGame.timestamp)}
+                    </time>
+                  )}
+                </div>
+              </div>
+
+              <div className="range-track" aria-hidden="true">
+                <div
+                  className="range-track-fill"
+                  style={{ left: `${fromPct}%`, right: `${100 - toPct}%` }}
+                />
+              </div>
+
+              <div className="range-slider-row">
+                <label className="range-slider-label" htmlFor="range-from">
+                  From game
+                </label>
+                <input
+                  id="range-from"
+                  className="range-input"
+                  type="range"
+                  min={1}
+                  max={totalGames}
+                  step={1}
+                  value={start}
+                  disabled={totalGames < 2}
+                  aria-valuetext={`Game ${start} of ${totalGames}${startGame ? `, ${formatDay(startGame.timestamp)}` : ''}`}
+                  onChange={(e) => handleStartChange(Number(e.target.value))}
+                />
+              </div>
+              <div className="range-slider-row">
+                <label className="range-slider-label" htmlFor="range-to">
+                  To game
+                </label>
+                <input
+                  id="range-to"
+                  className="range-input"
+                  type="range"
+                  min={1}
+                  max={totalGames}
+                  step={1}
+                  value={end}
+                  disabled={totalGames < 2}
+                  aria-valuetext={`Game ${end} of ${totalGames}${endGame ? `, ${formatDay(endGame.timestamp)}` : ''}`}
+                  onChange={(e) => handleEndChange(Number(e.target.value))}
+                />
+              </div>
+
+              <p className="range-slider-count" aria-live="polite">
+                {rangeCount} of {totalGames} games selected
+              </p>
+            </div>
+          </div>
+
+          <div className="range-reference card">
+            <button
+              className="range-reference-toggle"
+              onClick={() => setReferenceOpen((o) => !o)}
+              aria-expanded={referenceOpen}
+            >
+              <span>Game reference</span>
+              <span className="range-reference-chevron">{referenceOpen ? '▾' : '▸'}</span>
+            </button>
+            {referenceOpen && (
+              <div className="range-reference-list">
+                {referenceRows.map((row) => (
+                  <div key={row.id} className="range-reference-row">
+                    <div className="range-reference-info">
+                      <span className="range-reference-number">#{row.number}</span>
+                      <div className="range-reference-meta">
+                        <time
+                          className="range-reference-date"
+                          dateTime={new Date(row.timestamp).toISOString()}
+                        >
+                          {row.date}
+                        </time>
+                        <span className="range-reference-winner">
+                          <span className="range-reference-winner-label">Winner</span>
+                          {row.winner}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="range-reference-actions">
+                      <button
+                        className={`btn btn-reference${start === row.number ? ' is-selected' : ''}`}
+                        onClick={() => handleReferenceSet(row.number, 'start')}
+                      >
+                        From
+                      </button>
+                      <button
+                        className={`btn btn-reference${end === row.number ? ' is-selected' : ''}`}
+                        onClick={() => handleReferenceSet(row.number, 'end')}
+                      >
+                        To
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="stats-grid">
             <StatCard label="Games in Range" value={String(rangeCount)} />
             <StatCard label="Players" value={String(results.length)} />

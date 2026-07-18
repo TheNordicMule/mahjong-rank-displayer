@@ -6,59 +6,13 @@
   overflow-x: clip;
 }
 
-/* Input card */
-.range-inputs {
+/* Picker card */
+.range-picker {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
   padding: 20px;
   min-width: 0;
-}
-
-.range-fields {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.range-date-fields { display: flex; align-items: flex-end; gap: 16px; padding-top: 16px; border-top: 1px solid var(--border); min-width: 0; width: 100%; }
-.range-date-fields .input { min-width: 0; width: 100%; max-width: 100%; }
-.range-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 14px; border-left: 3px solid var(--accent); border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--text-secondary); font-size: 13px; }
-.range-summary strong { color: var(--text); }
-
-.range-field {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.range-label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
-.range-sep {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--muted);
-  padding-bottom: 10px;
-  user-select: none;
-}
-
-.range-bounds-hint {
-  font-size: 12px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.range-calc-btn {
-  align-self: center;
-  min-width: 160px;
 }
 
 /* Presets */
@@ -95,6 +49,180 @@
   background-color: var(--accent-soft);
   color: var(--text);
   box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Dual-endpoint slider */
+.range-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.range-slider-endpoints {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.range-endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.range-endpoint-right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.range-endpoint-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.range-endpoint-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.range-endpoint-date {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Selection bar over the full timeline */
+.range-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.range-track-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), #8aa8ff);
+  transition:
+    left 0.08s ease,
+    right 0.08s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .range-track-fill {
+    transition: none;
+  }
+}
+
+/* Slider rows */
+.range-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.range-slider-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.range-input::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -10px; /* center thumb on the 8px track */
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg-elevated);
+  box-shadow:
+    0 0 0 1px var(--accent-glow),
+    var(--shadow-sm);
+}
+
+.range-input::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.range-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg-elevated);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+.range-input:hover:not(:disabled)::-webkit-slider-thumb {
+  background: #7a9aff;
+}
+
+.range-input:hover:not(:disabled)::-moz-range-thumb {
+  background: #7a9aff;
+}
+
+.range-input:focus-visible {
+  outline: none;
+}
+
+.range-input:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px var(--accent-soft),
+    0 0 0 5px var(--accent);
+}
+
+.range-input:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 3px var(--accent-soft),
+    0 0 0 5px var(--accent);
+}
+
+.range-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.range-slider-count {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Game reference */
@@ -235,24 +363,6 @@
   color: var(--text);
 }
 
-.range-summary-hint {
-  color: var(--muted);
-  font-size: 12px;
-  font-style: italic;
-}
-
-/* Warning box (non-blocking info like clamping) */
-.warning-box {
-  background-color: var(--gold-soft);
-  color: var(--text);
-  border: 1px solid rgba(240, 198, 116, 0.25);
-  border-left: 4px solid var(--gold);
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 500;
-}
-
 /* Results table */
 .range-results {
   overflow-x: auto;
@@ -377,32 +487,8 @@
 
 /* Responsive */
 @media (max-width: 540px) {
-  .range-inputs {
+  .range-picker {
     padding: 16px;
-  }
-
-  .range-field .input {
-    min-width: 0;
-    width: 100%;
-    max-width: 100%;
-    font-size: 16px;
-  }
-
-  .range-fields {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .range-sep {
-    display: none;
-  }
-
-  .range-date-fields {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-    padding-top: 16px;
   }
 
   .range-preset-buttons {
@@ -411,6 +497,10 @@
 
   .btn-preset {
     flex: 1;
+  }
+
+  .range-endpoint-value {
+    font-size: 19px;
   }
 
   .range-reference-info {
@@ -453,9 +543,5 @@
     min-width: 20px;
     height: 20px;
     font-size: 11px;
-  }
-
-  .range-calc-btn {
-    width: 100%;
   }
 }
