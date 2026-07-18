@@ -84,6 +84,34 @@
   }
 }
 
+.secondary-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.metric-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(42, 42, 78, 0.62);
+}
+
+.metric-label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.metric-card strong { color: var(--text); font-size: 21px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.metric-sub { color: var(--muted); font-size: 11px; }
+.metric-range > div { display: flex; flex-wrap: wrap; gap: 10px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.metric-best { color: var(--gold); }
+.metric-worst { color: var(--red-rank); }
+
+@media (min-width: 640px) {
+  .secondary-stats { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+}
+
 .section {
   margin-top: 2px;
 }

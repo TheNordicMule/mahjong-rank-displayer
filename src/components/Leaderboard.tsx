@@ -32,7 +32,7 @@ export default function Leaderboard({ games }: LeaderboardProps) {
 
   return (
     <div className="card leaderboard-card">
-      <div className="range-table">
+      <div className="leaderboard-table">
         <div className="range-table-header">
           <span className="rt-col rt-rank">#</span>
           <span className="rt-col rt-name">Player</span>
@@ -43,6 +43,7 @@ export default function Leaderboard({ games }: LeaderboardProps) {
             <span>Rank</span>
           </span>
           <span className="rt-col rt-placements">1st/2nd/3rd/4th</span>
+          <span className="rt-col rt-chombo">Chombo</span>
         </div>
         {entries.map((p, i) => (
           <div key={p.name} className={`range-table-row${i === 0 ? ' top-row' : ''}`}>
@@ -64,6 +65,7 @@ export default function Leaderboard({ games }: LeaderboardProps) {
                 </span>
               ))}
             </span>
+            <span className="rt-col rt-chombo">{p.totalChombos}</span>
           </div>
         ))}
       </div>

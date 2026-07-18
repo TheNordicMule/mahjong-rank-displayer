@@ -36,6 +36,10 @@ export interface PlayerStats {
   avgScore: number;
   totalPoints: number;
   lastRanks: number[];
+  totalChombos: number;
+  top2Rate: number;
+  bestPoints: number;
+  worstPoints: number;
 }
 
 /** A single leaderboard row. */
@@ -45,6 +49,8 @@ export interface LeaderboardEntry {
   avgRank: number;
   totalPoints: number;
   placement: Placement;
+  totalChombos: number;
+  top2Rate: number;
 }
 
 /** A point on the cumulative points trend. */

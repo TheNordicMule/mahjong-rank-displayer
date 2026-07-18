@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Game, LeaderboardEntry, Placement } from '../types';
-import { getGames, getGamesRange } from '../utils/storage';
+import * as storage from '../utils/storage';
 import { processGame } from '../utils/scoring';
 import { getLeaderboard } from '../utils/stats';
 import { formatDate, formatSigned } from '../utils/format';
@@ -16,6 +16,8 @@ interface RangeResult extends LeaderboardEntry {
 export default function Range() {
   const [start, setStart] = useState<string>('');
   const [end, setEnd] = useState<string>('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [totalGames, setTotalGames] = useState<number>(0);
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -29,7 +31,7 @@ export default function Range() {
   useEffect(() => {
     (async () => {
       try {
-        const games = await getGames();
+        const games = await storage.getGames();
         setTotalGames(games.length);
         setAllGames(games);
         if (games.length > 0) {
@@ -72,7 +74,21 @@ export default function Range() {
         return;
       }
 
-      const games = await getGamesRange(clampedStart, clampedEnd);
+      const storageApi = storage as unknown as Record<string, unknown>;
+      const dateGetter = storageApi.getGamesDateRange as ((from: string, to: string) => Promise<Game[]>) | undefined;
+      let games = dateGetter && (startDate || endDate)
+        ? await dateGetter(startDate, endDate)
+        : await storage.getGamesRange(clampedStart, clampedEnd);
+      if (startDate || endDate) {
+        const from = startDate ? new Date(`${startDate}T00:00:00`).getTime() : -Infinity;
+        const to = endDate ? new Date(`${endDate}T23:59:59.999`).getTime() : Infinity;
+        games = games.filter((game) => game.timestamp >= from && game.timestamp <= to);
+      }
+      games = games.filter((game) => {
+        const chronological = [...allGames].sort((a, b) => a.timestamp - b.timestamp);
+        const index = chronological.findIndex((item) => item.id === game.id);
+        return index >= clampedStart - 1 && index < clampedEnd;
+      });
 
       if (!games || games.length === 0) {
         setRangeCount(0);
@@ -206,6 +222,12 @@ export default function Range() {
           </div>
         </div>
 
+        <div className="range-date-fields">
+          <div className="range-field"><label className="range-label" htmlFor="start-date">From date</label><input id="start-date" className="input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+          <div className="range-sep">→</div>
+          <div className="range-field"><label className="range-label" htmlFor="end-date">To date</label><input id="end-date" className="input" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+        </div>
+
         <div className="range-presets">
           <span className="range-presets-label">Quick select</span>
           <div className="range-preset-buttons">
@@ -282,6 +304,8 @@ export default function Range() {
       {error && <div className="error-box">{error}</div>}
 
       {warnings && !error && <div className="warning-box">{warnings}</div>}
+
+      {(start || end || startDate || endDate) && <div className="range-summary" aria-live="polite"><strong>Selected range</strong><span>{start || '1'}–{end || totalGames} games</span>{(startDate || endDate) && <span>{startDate || 'Any date'} → {endDate || 'Any date'}</span>}</div>}
 
       {hasResults && results.length === 0 && (
         <div className="empty-state">

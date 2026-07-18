@@ -39,18 +39,18 @@ export async function getGamesRange(start: number, end: number): Promise<Game[]>
   return data.games;
 }
 
-export async function addGame(players: Player[]): Promise<Game> {
+export async function addGame(players: Player[], options?: { uma?: number[]; returnScore?: number }): Promise<Game> {
   const data = await request<GameResponse>('/api/games', {
     method: 'POST',
-    body: JSON.stringify({ players }),
+    body: JSON.stringify({ players, uma: options?.uma, returnScore: options?.returnScore }),
   });
   return data.game;
 }
 
-export async function updateGame(id: string, players: Player[]): Promise<Game> {
+export async function updateGame(id: string, players: Player[], options?: { uma?: number[]; returnScore?: number }): Promise<Game> {
   const data = await request<GameResponse>(`/api/games/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ players }),
+    body: JSON.stringify({ players, uma: options?.uma, returnScore: options?.returnScore }),
   });
   return data.game;
 }

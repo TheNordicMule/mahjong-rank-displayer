@@ -4,16 +4,16 @@
   overflow-x: auto;
 }
 
-.range-table {
+.leaderboard-table {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 420px;
+  min-width: 500px;
 }
 
-.range-table-header {
+.leaderboard-table .range-table-header {
   display: grid;
-  grid-template-columns: 44px 1fr 40px 70px 60px 130px;
+  grid-template-columns: 44px 1fr 40px 70px 60px 130px 58px;
   gap: 8px;
   padding: 8px 10px;
   font-size: 11px;
@@ -24,9 +24,9 @@
   align-items: center;
 }
 
-.range-table-row {
+.leaderboard-table .range-table-row {
   display: grid;
-  grid-template-columns: 44px 1fr 40px 70px 60px 130px;
+  grid-template-columns: 44px 1fr 40px 70px 60px 130px 58px;
   gap: 8px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
@@ -103,6 +103,8 @@
   gap: 4px;
   justify-content: flex-end;
 }
+
+.rt-chombo { justify-content: center; color: var(--danger); font-weight: 700; font-size: 13px; }
 
 /* Placement count badges */
 .placement-count {
@@ -184,9 +186,9 @@
 
 /* Responsive */
 @media (max-width: 540px) {
-  .range-table-header,
-  .range-table-row {
-    grid-template-columns: 36px 1fr 36px 60px 50px 110px;
+  .leaderboard-table .range-table-header,
+  .leaderboard-table .range-table-row {
+    grid-template-columns: 36px 1fr 36px 60px 50px 110px 52px;
     gap: 6px;
     padding: 8px 8px;
   }

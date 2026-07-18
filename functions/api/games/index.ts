@@ -13,6 +13,7 @@ import { getDb, games, gamePlayers } from '../../_db';
 import type { Env } from '../../types';
 import type { Game, Player } from '../../../src/types';
 
+/***** Defaults used when request body omits uma / returnScore *****/
 const DEFAULT_UMA = [30, 10, -10, -30];
 const DEFAULT_RETURN_SCORE = 25000;
 
@@ -69,6 +70,8 @@ export async function onRequestGet(context: EventContext<Env, string, unknown>):
     const url = new URL(request.url);
     const startParam = url.searchParams.get('start');
     const endParam = url.searchParams.get('end');
+    const startDateParam = url.searchParams.get('startDate');
+    const endDateParam = url.searchParams.get('endDate');
 
     const [gamesRows, playerRows] = await Promise.all([
       db.select().from(games).orderBy(asc(games.timestamp)),
@@ -77,12 +80,27 @@ export async function onRequestGet(context: EventContext<Env, string, unknown>):
 
     let gamesList = gamesRows.map((g) => buildGame(g, playerRows));
 
-    // Apply start/end filter (1-based inclusive) only when both are present
+    // Apply start/end filter (1-based inclusive index range) only when both are present
     if (startParam !== null && endParam !== null) {
       const start = parseInt(startParam, 10);
       const end = parseInt(endParam, 10);
       if (!isNaN(start) && !isNaN(end) && start >= 1 && end >= start) {
         gamesList = gamesList.slice(start - 1, end);
+      }
+    }
+
+    // Apply startDate/endDate filter (inclusive timestamp range) when either is present
+    if (startDateParam !== null || endDateParam !== null) {
+      const startDate = startDateParam !== null ? parseInt(startDateParam, 10) : NaN;
+      const endDate = endDateParam !== null ? parseInt(endDateParam, 10) : NaN;
+      const hasValidStart = !isNaN(startDate);
+      const hasValidEnd = !isNaN(endDate);
+      if (hasValidStart || hasValidEnd) {
+        gamesList = gamesList.filter((g) => {
+          if (hasValidStart && g.timestamp < startDate) return false;
+          if (hasValidEnd && g.timestamp > endDate) return false;
+          return true;
+        });
       }
     }
 
@@ -97,6 +115,18 @@ export async function onRequestGet(context: EventContext<Env, string, unknown>):
   }
 }
 
+function validateUma(uma: unknown): string | null {
+  if (!Array.isArray(uma) || uma.length !== 4) {
+    return 'uma must be an array of exactly 4 numbers.';
+  }
+  for (const v of uma) {
+    if (typeof v !== 'number') {
+      return 'All uma values must be numbers.';
+    }
+  }
+  return null;
+}
+
 export async function onRequestPost(
   context: EventContext<Env, string, unknown>,
 ): Promise<Response> {
@@ -104,8 +134,10 @@ export async function onRequestPost(
     const { env, request } = context;
     const db = getDb(env);
 
-    const body = (await request.json()) as { players?: unknown };
+    const body = (await request.json()) as { players?: unknown; uma?: unknown; returnScore?: unknown };
     const players = body && body.players;
+    const requestedUma = body && body.uma;
+    const requestedReturnScore = body && body.returnScore;
 
     const validationError = validatePlayers(players);
     if (validationError) {
@@ -115,16 +147,33 @@ export async function onRequestPost(
       });
     }
 
+    if (requestedUma !== undefined) {
+      const umaErr = validateUma(requestedUma);
+      if (umaErr) {
+        return new Response(JSON.stringify({ error: umaErr }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    if (requestedReturnScore !== undefined && typeof requestedReturnScore !== 'number') {
+      return new Response(JSON.stringify({ error: 'returnScore must be a number.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const validPlayers = players as Player[];
+    const uma: number[] = (requestedUma as number[]) ?? DEFAULT_UMA;
+    const returnScore: number = (requestedReturnScore as number) ?? DEFAULT_RETURN_SCORE;
 
     const id = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const timestamp = Date.now();
-    const uma = JSON.stringify(DEFAULT_UMA);
-    const returnScore = DEFAULT_RETURN_SCORE;
 
     // Batch — first statement is game insert, rest are player inserts
     await db.batch([
-      db.insert(games).values({ id, timestamp, uma, returnScore }),
+      db.insert(games).values({ id, timestamp, uma: JSON.stringify(uma), returnScore }),
       ...validPlayers.map((p, i) =>
         db.insert(gamePlayers).values({
           gameId: id,
@@ -139,8 +188,8 @@ export async function onRequestPost(
     const game = {
       id,
       timestamp,
-      uma: DEFAULT_UMA,
-      returnScore: DEFAULT_RETURN_SCORE,
+      uma,
+      returnScore,
       players: validPlayers.map((p) => ({
         name: p.name,
         rawScore: p.rawScore,

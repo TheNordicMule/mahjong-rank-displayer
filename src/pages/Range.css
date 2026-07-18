@@ -18,6 +18,10 @@
   gap: 12px;
 }
 
+.range-date-fields { display: flex; align-items: flex-end; gap: 12px; padding-top: 2px; border-top: 1px solid var(--border); }
+.range-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 14px; border-left: 3px solid var(--accent); border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--text-secondary); font-size: 13px; }
+.range-summary strong { color: var(--text); }
+
 .range-field {
   flex: 1;
   display: flex;
@@ -352,6 +356,8 @@
   .range-sep {
     display: none;
   }
+
+  .range-date-fields { flex-direction: column; align-items: stretch; }
 
   .range-preset-buttons {
     width: 100%;

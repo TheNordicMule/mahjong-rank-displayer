@@ -101,6 +101,13 @@ export default function PlayerDetail() {
             <StatCard label="Total Points" value={String(stats.totalPoints)} sub="with uma" />
           </div>
 
+          <div className="secondary-stats" aria-label="Additional player metrics">
+            <div className="metric-card"><span className="metric-label">Top 2 rate</span><strong>{stats.totalGames > 0 ? `${stats.top2Rate}%` : '—'}</strong><span className="metric-sub">1st or 2nd</span></div>
+            <div className="metric-card"><span className="metric-label">Average points/game</span><strong>{stats.totalGames > 0 ? formatSigned(stats.totalPoints / stats.totalGames) : '—'}</strong><span className="metric-sub">with uma</span></div>
+            <div className="metric-card"><span className="metric-label">Chombo rate</span><strong>{stats.totalGames > 0 ? `${Math.round((stats.totalChombos / stats.totalGames) * 1000) / 10}%` : '—'}</strong><span className="metric-sub">{stats.totalChombos} of {stats.totalGames} games</span></div>
+            <div className="metric-card metric-range"><span className="metric-label">Points range</span><div><span className="metric-best">Best {stats.totalGames > 0 ? formatSigned(stats.bestPoints) : '—'}</span><span className="metric-worst">Worst {stats.totalGames > 0 ? formatSigned(stats.worstPoints) : '—'}</span></div><span className="metric-sub">single-game result</span></div>
+          </div>
+
           <div className="section card">
             <h3 className="section-title">Placement Distribution</h3>
             <PlacementBars placement={stats.placement} totalGames={stats.totalGames} />

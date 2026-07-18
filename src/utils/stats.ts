@@ -63,6 +63,10 @@ export function getPlayerStats(games: Game[], playerName: string): PlayerStats {
       avgScore: 0,
       totalPoints: 0,
       lastRanks: [],
+      totalChombos: 0,
+      top2Rate: 0,
+      bestPoints: 0,
+      worstPoints: 0,
     };
   }
 
@@ -70,17 +74,25 @@ export function getPlayerStats(games: Game[], playerName: string): PlayerStats {
   let sumRank = 0;
   let sumScore = 0;
   let sumPoints = 0;
+  let sumChombos = 0;
+  let bestPoints = -Infinity;
+  let worstPoints = Infinity;
 
   relevant.forEach((e) => {
     placementCount[e.rank] = (placementCount[e.rank] || 0) + 1;
     sumRank += e.rank;
     sumScore += e.rawScore;
     sumPoints += e.points;
+    if (e.chombo) sumChombos += 1;
+    if (e.points > bestPoints) bestPoints = e.points;
+    if (e.points < worstPoints) worstPoints = e.points;
   });
 
   const avgRank = Math.round((sumRank / totalGames) * 100) / 100;
   const avgScore = Math.round((sumScore / totalGames) * 100) / 100;
   const totalPoints = Math.round(sumPoints * 100) / 100;
+  const top2Count = (placementCount[1] || 0) + (placementCount[2] || 0);
+  const top2Rate = Math.round((top2Count / totalGames) * 1000) / 10;
 
   const placement: Placement = {};
   for (const r of [1, 2, 3, 4]) {
@@ -89,13 +101,24 @@ export function getPlayerStats(games: Game[], playerName: string): PlayerStats {
 
   const lastRanks = getLastRanks(games, playerName, 10);
 
-  return { totalGames, avgRank, placement, avgScore, totalPoints, lastRanks };
+  return {
+    totalGames,
+    avgRank,
+    placement,
+    avgScore,
+    totalPoints,
+    lastRanks,
+    totalChombos: sumChombos,
+    top2Rate,
+    bestPoints,
+    worstPoints,
+  };
 }
 
 export function getLeaderboard(games: Game[]): LeaderboardEntry[] {
   const playerMap: Record<
     string,
-    { name: string; games: number; sumRank: number; sumPoints: number; placementCount: Placement }
+    { name: string; games: number; sumRank: number; sumPoints: number; placementCount: Placement; chomboCount: number }
   > = {};
 
   for (const game of games) {
@@ -108,12 +131,14 @@ export function getLeaderboard(games: Game[]): LeaderboardEntry[] {
           sumRank: 0,
           sumPoints: 0,
           placementCount: { 1: 0, 2: 0, 3: 0, 4: 0 },
+          chomboCount: 0,
         };
       }
       playerMap[e.name].games += 1;
       playerMap[e.name].sumRank += e.rank;
       playerMap[e.name].sumPoints += e.points;
       playerMap[e.name].placementCount[e.rank] += 1;
+      if (e.chombo) playerMap[e.name].chomboCount += 1;
     });
   }
 
@@ -124,7 +149,17 @@ export function getLeaderboard(games: Game[]): LeaderboardEntry[] {
     for (const r of [1, 2, 3, 4]) {
       placement[r] = p.games > 0 ? Math.round((p.placementCount[r] / p.games) * 1000) / 10 : 0;
     }
-    return { name: p.name, games: p.games, avgRank, totalPoints, placement };
+    const top2Count = (p.placementCount[1] || 0) + (p.placementCount[2] || 0);
+    const top2Rate = p.games > 0 ? Math.round((top2Count / p.games) * 1000) / 10 : 0;
+    return {
+      name: p.name,
+      games: p.games,
+      avgRank,
+      totalPoints,
+      placement,
+      totalChombos: p.chomboCount,
+      top2Rate,
+    };
   });
 
   leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);

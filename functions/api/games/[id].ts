@@ -47,8 +47,10 @@ export async function onRequestPut(context: EventContext<Env, 'id', unknown>): P
       });
     }
 
-    const body = (await request.json()) as { players?: unknown };
+    const body = (await request.json()) as { players?: unknown; uma?: unknown; returnScore?: unknown };
     const players = body && body.players;
+    const requestedUma = body && body.uma;
+    const requestedReturnScore = body && body.returnScore;
 
     const validationError = validatePlayers(players);
     if (validationError) {
@@ -58,10 +60,33 @@ export async function onRequestPut(context: EventContext<Env, 'id', unknown>): P
       });
     }
 
+    if (requestedUma !== undefined) {
+      if (!Array.isArray(requestedUma) || requestedUma.length !== 4 || requestedUma.some((v: unknown) => typeof v !== 'number')) {
+        return new Response(JSON.stringify({ error: 'uma must be an array of exactly 4 numbers.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    if (requestedReturnScore !== undefined && typeof requestedReturnScore !== 'number') {
+      return new Response(JSON.stringify({ error: 'returnScore must be a number.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const validPlayers = players as Player[];
 
-    // Batch: delete old players, insert new ones
+    // Use provided values or fall back to existing game row values
+    const uma: number[] = (requestedUma as number[]) ?? (JSON.parse(gameRow.uma) as number[]);
+    const returnScore: number = (requestedReturnScore as number) ?? gameRow.returnScore;
+
+    // Batch: delete old players, insert new ones; update game uma/returnScore
     await db.batch([
+      db.update(games)
+        .set({ uma: JSON.stringify(uma), returnScore })
+        .where(eq(games.id, id)),
       db.delete(gamePlayers).where(eq(gamePlayers.gameId, id)),
       ...validPlayers.map((p, i) =>
         db.insert(gamePlayers).values({
@@ -77,8 +102,8 @@ export async function onRequestPut(context: EventContext<Env, 'id', unknown>): P
     const game = {
       id,
       timestamp: gameRow.timestamp,
-      uma: JSON.parse(gameRow.uma) as number[],
-      returnScore: gameRow.returnScore,
+      uma,
+      returnScore,
       players: validPlayers.map((p) => ({
         name: p.name,
         rawScore: p.rawScore,
