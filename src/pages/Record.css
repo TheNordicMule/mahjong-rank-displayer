@@ -166,7 +166,9 @@
   gap: 6px;
   cursor: pointer;
   white-space: nowrap;
-  padding: 8px 0;
+  align-self: flex-end;
+  min-height: 44px;
+  padding: 0;
   user-select: none;
 }
 
@@ -202,6 +204,10 @@
   .row-fields {
     flex-direction: column;
     gap: 8px;
+  }
+
+  .chombo-toggle {
+    align-self: flex-start;
   }
 
   .scoring-fields { flex-direction: column; align-items: stretch; gap: 14px; }

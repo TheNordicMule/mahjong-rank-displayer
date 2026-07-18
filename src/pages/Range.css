@@ -19,11 +19,13 @@
 }
 
 .range-date-fields { display: flex; align-items: flex-end; gap: 12px; padding-top: 2px; border-top: 1px solid var(--border); }
+.range-date-fields .input { min-width: 0; }
 .range-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 14px; border-left: 3px solid var(--accent); border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--text-secondary); font-size: 13px; }
 .range-summary strong { color: var(--text); }
 
 .range-field {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -82,6 +84,14 @@
 .btn-preset {
   padding: 7px 14px;
   font-size: 13px;
+}
+
+.btn-preset.is-selected,
+.btn-reference.is-selected {
+  border: 1px solid var(--accent);
+  background-color: var(--accent-soft);
+  color: var(--text);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 /* Game reference */
@@ -204,11 +214,18 @@
   font-size: 12px;
   background-color: var(--card-bg);
   color: var(--text-secondary);
+  border: 1px solid transparent;
 }
 
 .btn-reference:hover {
   background-color: var(--accent-soft);
   color: var(--text);
+}
+
+.range-summary-hint {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
 }
 
 /* Warning box (non-blocking info like clamping) */
@@ -347,6 +364,15 @@
 
 /* Responsive */
 @media (max-width: 540px) {
+  .range-inputs {
+    padding: 16px;
+  }
+
+  .range-field .input {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .range-fields {
     flex-direction: column;
     align-items: stretch;

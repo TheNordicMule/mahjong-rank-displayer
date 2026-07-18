@@ -175,6 +175,8 @@ export default function Range() {
   }
 
   const hasResults = results !== null;
+  const selectedStart = start || (totalGames > 0 ? '1' : '');
+  const selectedEnd = end || (totalGames > 0 ? String(totalGames) : '');
 
   const presets: { key: number | 'all'; label: string }[] = [
     { key: 'all', label: 'All games' },
@@ -234,9 +236,10 @@ export default function Range() {
             {presets.map((preset) => (
               <button
                 key={String(preset.key)}
-                className="btn btn-secondary btn-preset"
+                className={`btn btn-secondary btn-preset${(((preset.key === 'all' && selectedStart === '1') || (typeof preset.key === 'number' && selectedStart === String(Math.max(1, totalGames - preset.key + 1)))) && selectedEnd === String(totalGames)) ? ' is-selected' : ''}`}
                 onClick={() => applyPreset(preset.key)}
                 disabled={totalGames === 0}
+                aria-pressed={((preset.key === 'all' && selectedStart === '1') || (typeof preset.key === 'number' && selectedStart === String(Math.max(1, totalGames - preset.key + 1)))) && selectedEnd === String(totalGames)}
               >
                 {preset.label}
               </button>
@@ -282,13 +285,13 @@ export default function Range() {
                   </div>
                   <div className="range-reference-actions">
                     <button
-                      className="btn btn-reference"
+                      className={`btn btn-reference${start === String(row.number) ? ' is-selected' : ''}`}
                       onClick={() => handleReferenceSet(row.number, 'start')}
                     >
                       From
                     </button>
                     <button
-                      className="btn btn-reference"
+                      className={`btn btn-reference${end === String(row.number) ? ' is-selected' : ''}`}
                       onClick={() => handleReferenceSet(row.number, 'end')}
                     >
                       To
@@ -305,7 +308,7 @@ export default function Range() {
 
       {warnings && !error && <div className="warning-box">{warnings}</div>}
 
-      {(start || end || startDate || endDate) && <div className="range-summary" aria-live="polite"><strong>Selected range</strong><span>{start || '1'}–{end || totalGames} games</span>{(startDate || endDate) && <span>{startDate || 'Any date'} → {endDate || 'Any date'}</span>}</div>}
+      {(start || end || startDate || endDate) && <div className="range-summary" aria-live="polite"><strong>Selected range</strong><span>{selectedStart}–{selectedEnd} games</span>{(startDate || endDate) && <span>{startDate || 'Any date'} → {endDate || 'Any date'}</span>}<span className="range-summary-hint">Press Calculate to update results</span></div>}
 
       {hasResults && results.length === 0 && (
         <div className="empty-state">
