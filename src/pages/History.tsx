@@ -90,13 +90,13 @@ export default function History() {
 
       <div className="history-filters card">
         <label className="history-filter"><span>Player</span><select className="input" value={playerFilter} onChange={(e) => setPlayerFilter(e.target.value)}><option value="">All players</option>{players.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
-        <label className="history-filter"><span>From date</span><input className="input" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></label>
-        <label className="history-filter"><span>To date</span><input className="input" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} /></label>
+        <label className="history-filter"><span>From date</span><input className="input" type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} /></label>
+        <label className="history-filter"><span>To date</span><input className="input" type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} /></label>
         {(playerFilter || fromDate || toDate) && <button className="btn btn-secondary clear-filters" onClick={() => { setPlayerFilter(''); setFromDate(''); setToDate(''); }}>Clear</button>}
       </div>
       {deleteError && <div className="error-box" role="alert">{deleteError}</div>}
 
-      {mapped.length === 0 && (
+      {mapped.length === 0 && allMapped.length === 0 && (
         <div className="empty-state">
           <p>
             No games recorded yet.

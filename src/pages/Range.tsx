@@ -35,6 +35,7 @@ export default function Range() {
         setTotalGames(games.length);
         setAllGames(games);
         if (games.length > 0) {
+          setStart('1');
           setEnd(String(games.length));
         }
       } catch (e) {
@@ -75,11 +76,7 @@ export default function Range() {
         return;
       }
 
-      const storageApi = storage as unknown as Record<string, unknown>;
-      const dateGetter = storageApi.getGamesDateRange as ((from: string, to: string) => Promise<Game[]>) | undefined;
-      let games = dateGetter && (startDate || endDate)
-        ? await dateGetter(startDate, endDate)
-        : await storage.getGamesRange(clampedStart, clampedEnd);
+      let games = await storage.getGamesRange(clampedStart, clampedEnd);
       if (startDate || endDate) {
         const from = startDate ? new Date(`${startDate}T00:00:00`).getTime() : -Infinity;
         const to = endDate ? new Date(`${endDate}T23:59:59.999`).getTime() : Infinity;
@@ -135,18 +132,28 @@ export default function Range() {
   const handleCalculate = (): void => {
     const s = parseInt(start, 10);
     const e = parseInt(end, 10);
+    const hasNumbers = !isNaN(s) && !isNaN(e);
+    const hasDates = startDate !== '' || endDate !== '';
 
-    if (isNaN(s) || isNaN(e)) {
-      setError('Please enter valid numbers for both fields.');
+    if (!hasNumbers && !hasDates) {
+      setError('Please enter game numbers, a date range, or both.');
       return;
     }
 
-    if (s > e) {
+    if (hasNumbers && s > e) {
       setError('Start game must be less than or equal to end game.');
       return;
     }
 
-    runCalculation(s, e);
+    if (startDate && endDate && startDate > endDate) {
+      setError('From date must be on or before to date.');
+      return;
+    }
+
+    // When only dates are provided, default to the full game-number range
+    const normStart = hasNumbers ? s : 1;
+    const normEnd = hasNumbers ? e : totalGames;
+    runCalculation(normStart, normEnd);
   };
 
   const applyPreset = (count: number | 'all'): void => {
@@ -155,6 +162,9 @@ export default function Range() {
     const startNum = count === 'all' ? 1 : Math.max(1, totalGames - count + 1);
     setStart(String(startNum));
     setEnd(String(endNum));
+    // Clear date filters so presets are not silently narrowed by stale dates
+    setStartDate('');
+    setEndDate('');
     runCalculation(startNum, endNum);
   };
 
@@ -226,9 +236,9 @@ export default function Range() {
         </div>
 
         <div className="range-date-fields">
-          <div className="range-field"><label className="range-label" htmlFor="start-date">From date</label><input id="start-date" className="input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+          <div className="range-field"><label className="range-label" htmlFor="start-date">From date (optional)</label><input id="start-date" className="input" type="date" value={startDate} max={endDate || undefined} onChange={(e) => setStartDate(e.target.value)} /></div>
           <div className="range-sep">→</div>
-          <div className="range-field"><label className="range-label" htmlFor="end-date">To date</label><input id="end-date" className="input" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+          <div className="range-field"><label className="range-label" htmlFor="end-date">To date (optional)</label><input id="end-date" className="input" type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} /></div>
         </div>
 
         <div className="range-presets">
